@@ -210,8 +210,10 @@ def _query_vector(question: str, given: list[float] | None) -> list[float] | Non
 
 
 def _run(question: str, qv: list[float] | None, owner_id: str, scopes: list[str] | None, k: int,
-         *, ids_only: bool = False, start: str | None = None) -> tuple[list[dict], str]:
-    """Try each mode in order (from `start`), skipping ones that recently failed. Returns (docs, mode)."""
+         *, ids_only: bool = False, start: str | None = None,
+         capture: list | None = None) -> tuple[list[dict], str]:
+    """Try each mode in order (from `start`), skipping ones that recently failed. Returns (docs, mode).
+    If `capture` is given, the pipeline that actually ran is appended to it (for the /ask "query" field)."""
     global _last_mode
     now = utcnow()
     modes = MODES[MODES.index(start):] if start else MODES
@@ -231,6 +233,8 @@ def _run(question: str, qv: list[float] | None, owner_id: str, scopes: list[str]
         if mode != _last_mode and not ids_only:
             log.info("retrieval mode: %s", mode)
             _last_mode = mode
+        if capture is not None:
+            capture.append({"mode": mode, "pipeline": pipeline})
         return docs, mode
     return [], "keyword"
 
@@ -250,10 +254,10 @@ def _shape(doc: dict) -> dict:
 # ---------- public API ----------
 
 def _search(question: str, owner_id: str, scopes: list[str], k: int,
-            qv: list[float] | None) -> tuple[list[dict], str | None]:
+            qv: list[float] | None, capture: list | None = None) -> tuple[list[dict], str | None]:
     if not scopes or not question.strip():
         return [], None
-    docs, mode = _run(question, qv, owner_id, scopes, k)
+    docs, mode = _run(question, qv, owner_id, scopes, k, capture=capture)
     return [_shape(d) for d in docs], mode
 
 
@@ -267,21 +271,23 @@ def hybrid_search(question: str, *, owner_id: str, scopes: list[str], k: int = 5
 
 
 def _count_blocked(question: str, *, owner_id: str, scopes: list[str], k: int = 5,
-                   query_vector: list[float] | None = None, mode: str | None = None) -> int:
-    """How many of the top k hits, ignoring scope, the viewer may not read.
+                   query_vector: list[float] | None = None, mode: str | None = None,
+                   capture: list | None = None) -> list[str]:
+    """Scopes of the top k hits, ignoring scope, that the viewer may not read (one entry per hit).
     Only _id and scope are projected, so blocked text never leaves the database."""
     if set(access.ALL_SCOPES) <= set(scopes) or not question.strip():
-        return 0
-    hits, _ = _run(question, query_vector, owner_id, None, k, ids_only=True, start=mode)
-    return sum(1 for h in hits if h.get("scope") not in scopes)
+        return []
+    hits, _ = _run(question, query_vector, owner_id, None, k, ids_only=True, start=mode, capture=capture)
+    return [h.get("scope") for h in hits if h.get("scope") not in scopes]
 
 
-def _relevance(qv: list[float], owner_id: str, k: int = 10) -> tuple[dict[str, tuple[str, float]], float]:
+def _relevance(qv: list[float], owner_id: str, k: int = 10,
+               capture: list | None = None) -> tuple[dict[str, tuple[str, float]], float]:
     """Vector similarity of the top k memories across ALL scopes: {id: (scope, vectorSearchScore)} and the cutoff.
     Only _id, scope and the score leave the database. A memory counts as relevant when its score is at least
     RELEVANCE_MIN and within RELEVANCE_MARGIN of the best match, so one shared cutoff decides both which sources
     are shown and which withheld memories are counted."""
-    hits, _ = _run("", qv, owner_id, None, k, ids_only=True, start="vector")
+    hits, _ = _run("", qv, owner_id, None, k, ids_only=True, start="vector", capture=capture)
     scores = {h["_id"]: (h.get("scope"), float(h.get("_score") or 0.0)) for h in hits}
     top = max((s for _, s in scores.values()), default=0.0)
     return scores, max(settings.RELEVANCE_MIN, top - settings.RELEVANCE_MARGIN)
@@ -358,6 +364,66 @@ def _annotate_trace(**metadata) -> None:
         pass
 
 
+def _public(value):
+    """JSON-safe copy of a pipeline for the UI: dates as ISO strings, the query vector summarised."""
+    if isinstance(value, dict):
+        return {k: (f"<{len(v)}-dim {settings.VOYAGE_MODEL} embedding of the question>"
+                    if k == "queryVector" and isinstance(v, list) else _public(v)) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_public(v) for v in value]
+    if isinstance(value, datetime):
+        return value.isoformat().replace("+00:00", "Z")
+    return value
+
+
+def _prefilter(pipeline: list[dict]):
+    """The access filter as the database applied it: the $vectorSearch pre-filter, or the $match in keyword mode."""
+    for stage in pipeline:
+        if "$vectorSearch" in stage:
+            return stage["$vectorSearch"].get("filter")
+        if "$rankFusion" in stage:
+            for sub_pipeline in stage["$rankFusion"]["input"]["pipelines"].values():
+                found = _prefilter(sub_pipeline)
+                if found is not None:
+                    return found
+        if "$match" in stage:
+            return stage["$match"]
+    return None
+
+
+def _describe_query(main: list, check: list, cutoff: float | None) -> dict:
+    ran = main[0] if main else None
+    out = {
+        "collection": db.MEMORIES,
+        "mode": ran["mode"] if ran else None,
+        "prefilter": _public(_prefilter(ran["pipeline"])) if ran else None,
+        "pipeline": _public(ran["pipeline"]) if ran else None,
+        "note": None if ran else "No readable scopes for this person, so the search did not run.",
+        "relevance_check": None,
+    }
+    if check:
+        out["relevance_check"] = {
+            "mode": check[0]["mode"],
+            "pipeline": _public(check[0]["pipeline"]),
+            "cutoff": round(cutoff, 3) if cutoff is not None else None,
+            "rule": (f"score >= {settings.RELEVANCE_MIN} and within {settings.RELEVANCE_MARGIN} of the best match; "
+                     "same filter without the scope clause, returns only _id, scope and score"),
+        }
+    return out
+
+
+def _trace_url() -> str | None:
+    """LangSmith URL of the current ask run, or None when tracing is off."""
+    try:
+        from langsmith.run_helpers import get_current_run_tree
+
+        run = get_current_run_tree()
+        return run.get_url() if run is not None else None
+    except Exception as exc:
+        log.debug("no trace url: %s", exc)
+        return None
+
+
 @traceable(
     name="ask",
     run_type="chain",
@@ -366,28 +432,37 @@ def _annotate_trace(**metadata) -> None:
     process_outputs=lambda out: {**out, "used_memory_ids": [s["memory"]["id"] for s in out.get("sources", [])]},
 )
 def ask(viewer: dict, question: str, memory_on: bool = True) -> dict:
-    """Contract response: {answer_text, sources: [{memory, clip_url, transcript}], blocked_count, audit_id}."""
+    """Contract response: {answer_text, sources: [{memory, clip_url, transcript}], blocked_count, audit_id,
+    viewer, allowed_scopes, used_memory_ids, withheld_scopes, trace_url, query}."""
     viewer_id = viewer["_id"]
     owner_id = access.default_expert_id()
+    scopes = access.allowed_scopes(viewer, owner_id)
+    who = {"id": viewer_id, "name": viewer.get("name", viewer_id)}
 
     if not memory_on:
         answer = _answer_without_memory(question)
         audit_id = audit.write_audit(viewer_id, "ask", [], True, "memory off: answered without retrieval",
                                      detail={"memory_on": False, "question": question[:500]})
-        _annotate_trace(viewer_id=viewer_id, used_memory_ids=[], blocked_count=0, retrieval_mode=None,
-                        memory_on=False)
-        return {"answer_text": answer, "sources": [], "blocked_count": 0, "audit_id": audit_id}
+        _annotate_trace(viewer_id=viewer_id, viewer_name=who["name"], allowed_scopes=scopes, used_memory_ids=[],
+                        blocked_count=0, withheld_scopes=[], retrieval_mode=None, memory_on=False)
+        return {"answer_text": answer, "sources": [], "blocked_count": 0, "audit_id": audit_id,
+                "viewer": who, "allowed_scopes": scopes, "used_memory_ids": [], "withheld_scopes": [],
+                "trace_url": _trace_url(), "query": None}
 
-    scopes = access.allowed_scopes(viewer, owner_id)
+    main_q: list = []
+    check_q: list = []
+    cutoff = None
     qv = _query_vector(question, None)
-    docs, mode = _search(question, owner_id, scopes, 5, qv)
+    docs, mode = _search(question, owner_id, scopes, 5, qv, capture=main_q)
     if qv is not None:
         # Relevance cutoff: drop off-topic hits, and only count withheld memories that are actually on topic.
-        scores, cutoff = _relevance(qv, owner_id)
+        scores, cutoff = _relevance(qv, owner_id, capture=check_q)
         docs = [d for d in docs if scores.get(d["_id"], (None, 0.0))[1] >= cutoff]
-        blocked = sum(1 for scope, s in scores.values() if s >= cutoff and scope not in scopes)
+        withheld = sorted(scope for scope, s in scores.values() if s >= cutoff and scope not in scopes)
     else:  # keyword fallback: no similarity scores to cut on
-        blocked = _count_blocked(question, owner_id=owner_id, scopes=scopes, k=5, query_vector=qv, mode=mode)
+        withheld = sorted(_count_blocked(question, owner_id=owner_id, scopes=scopes, k=5, query_vector=qv,
+                                         mode=mode, capture=check_q))
+    blocked = len(withheld)
 
     sources = [{
         "memory": memory_out(d),
@@ -409,6 +484,9 @@ def ask(viewer: dict, question: str, memory_on: bool = True) -> dict:
         viewer_id, "ask", used_ids, blocked == 0, reason,
         detail={"memory_on": True, "question": question[:500], "retrieval_mode": mode, "blocked_count": blocked},
     )
-    _annotate_trace(viewer_id=viewer_id, used_memory_ids=used_ids, blocked_count=blocked, retrieval_mode=mode,
-                    memory_on=True, scores={d["_id"]: d["_score"] for d in docs})
-    return {"answer_text": answer, "sources": sources, "blocked_count": blocked, "audit_id": audit_id}
+    _annotate_trace(viewer_id=viewer_id, viewer_name=who["name"], allowed_scopes=scopes, used_memory_ids=used_ids,
+                    blocked_count=blocked, withheld_scopes=withheld, retrieval_mode=mode, memory_on=True,
+                    scores={d["_id"]: d["_score"] for d in docs})
+    return {"answer_text": answer, "sources": sources, "blocked_count": blocked, "audit_id": audit_id,
+            "viewer": who, "allowed_scopes": scopes, "used_memory_ids": used_ids, "withheld_scopes": withheld,
+            "trace_url": _trace_url(), "query": _describe_query(main_q, check_q, cutoff)}

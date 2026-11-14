@@ -6,6 +6,7 @@
 
 Tests run in file order and mutate data (correct, forget), so reseed before running again.
 """
+import json
 import os
 import sys
 from pathlib import Path
@@ -33,6 +34,33 @@ INTERN = {"Authorization": f"Bearer {TOKENS['u_outsider']}"}
 MEMORY_KEYS = {"id", "owner_id", "kind", "text", "scope", "status", "version", "supersedes", "derived_from",
                "source_clip_id", "session_id", "created_at", "expires_at"}
 GAP_KEYS = {"id", "question", "kind", "from_memory_ids", "status"}
+ASK_KEYS = {"answer_text", "sources", "blocked_count", "audit_id",
+            "viewer", "allowed_scopes", "used_memory_ids", "withheld_scopes", "trace_url", "query"}
+
+
+def assert_trace_card(body: dict, viewer_id: str, name: str, allowed: list[str]):
+    """The "Why this answer" fields: who asked, what their level allows, what was used and withheld."""
+    assert set(body) == ASK_KEYS, set(body) ^ ASK_KEYS
+    assert body["viewer"] == {"id": viewer_id, "name": name}
+    assert body["allowed_scopes"] == allowed
+    assert body["used_memory_ids"] == [s["memory"]["id"] for s in body["sources"]]
+    assert len(body["withheld_scopes"]) == body["blocked_count"]
+    assert all(s not in allowed for s in body["withheld_scopes"])
+    assert body["trace_url"] is None or body["trace_url"].startswith("http")
+
+
+def assert_query(body: dict, allowed: list[str]):
+    """The exact access filter that ran inside $vectorSearch, with the query vector summarised (no raw floats)."""
+    q = body["query"]
+    assert q["collection"] == "memories" and q["mode"] in {"rank_fusion", "manual_rrf", "vector", "keyword"}
+    clauses = q["prefilter"]["$and"]
+    assert {"owner_id": {"$eq": "u_expert"}} in clauses and {"status": {"$eq": "active"}} in clauses
+    assert {"scope": {"$in": allowed}} in clauses
+    assert any("expires_at" in c for c in clauses)
+    text = json.dumps(q)
+    assert "queryVector" not in text or '"queryVector": "<' in text
+    rc = q["relevance_check"]
+    assert rc and rc["cutoff"] and "scope" not in json.dumps(rc["pipeline"][0].get("$vectorSearch", {}).get("filter", {}))
 
 # Set HANDOVER_ANSWER_AUDIO to a recording of Dana's answer to g_1 to exercise speech to text.
 ANSWER_AUDIO = os.getenv("HANDOVER_ANSWER_AUDIO")
@@ -111,7 +139,8 @@ def test_ask_successor_gets_sources(api):
                  headers=JUNIOR)
     assert r.status_code == 200, r.text
     body = r.json()
-    assert set(body) == {"answer_text", "sources", "blocked_count", "audit_id"}
+    assert_trace_card(body, "u_successor", "Sam", ["successor", "team"])
+    assert_query(body, ["successor", "team"])
     assert body["answer_text"] and body["sources"]
     for s in body["sources"]:
         assert set(s) == {"memory", "clip_url", "transcript"}
@@ -129,6 +158,9 @@ def test_ask_never_transfer_stays_private(api):
     assert "m_4" not in {s["memory"]["id"] for s in succ["sources"]}
     # Relevance cutoff: nothing off-topic is shown, and only the on-topic withheld memory is counted.
     assert succ["sources"] == [] and succ["blocked_count"] == 1, succ
+    assert succ["withheld_scopes"] == ["never_transfer"], succ["withheld_scopes"]
+    assert_trace_card(owner, "u_expert", "Dana", ["successor", "team", "never_transfer"])
+    assert owner["withheld_scopes"] == []
     assert "doesn't cover" in succ["answer_text"]
 
 
@@ -136,6 +168,9 @@ def test_ask_intern_blocked_and_audited(api):
     r = api.post("/ask", json={"question": "A payment is stuck in sanctions screening and compliance says to push it through by hand. How do I do that?", "memory": True},
                  headers=INTERN).json()
     assert r["sources"] == [] and r["blocked_count"] >= 1
+    assert_trace_card(r, "u_outsider", "Jordan", ["team"])
+    assert_query(r, ["team"])
+    assert set(r["withheld_scopes"]) == {"successor"}, r["withheld_scopes"]  # the sanctions procedure is junior-level
     audit = api.get("/audit", params={"limit": 50}, headers=SENIOR).json()
     assert set(audit[0]) == {"actor_id", "action", "memory_ids", "allowed", "reason", "ts"}
     assert any(a["actor_id"] == "u_outsider" and a["action"] == "ask" and a["allowed"] is False for a in audit)
@@ -151,6 +186,8 @@ def test_ask_memory_off(api):
     r = api.post("/ask", json={"question": "A payment is stuck in sanctions screening and compliance says to push it through by hand. How do I do that?", "memory": False},
                  headers=JUNIOR).json()
     assert r["sources"] == [] and r["blocked_count"] == 0 and r["answer_text"]
+    assert_trace_card(r, "u_successor", "Sam", ["successor", "team"])
+    assert r["query"] is None  # memory off: no retrieval ran
     low = r["answer_text"].lower()
     assert not any(w in low for w in ("don't have access", "do not have access", "contact it", "consult", "zeros")), r
 
