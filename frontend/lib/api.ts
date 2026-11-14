@@ -55,10 +55,13 @@ export const realApi: HandoverApi = {
   startSession: (expertId) =>
     request<StartSessionResponse>("/sessions", { method: "POST", body: json({ expert_id: expertId }) }),
 
-  answer: (sessionId, audio) => {
+  answer: (sessionId, audio, transcript) => {
     const form = new FormData();
-    const ext = audio.type.includes("ogg") ? "ogg" : audio.type.includes("mp4") ? "m4a" : "webm";
-    form.append("audio", audio, `answer.${ext}`);
+    if (audio) {
+      const ext = audio.type.includes("ogg") ? "ogg" : audio.type.includes("mp4") ? "m4a" : "webm";
+      form.append("audio", audio, `answer.${ext}`);
+    }
+    if (transcript?.trim()) form.append("transcript", transcript.trim());
     return request<AnswerResponse>(`/sessions/${enc(sessionId)}/answer`, { method: "POST", body: form });
   },
 

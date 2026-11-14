@@ -18,7 +18,7 @@ export function AnswerView({ r }: { r: AskResponse }) {
           <ul className="space-y-3">
             {r.sources.map((s) => (
               <li key={s.memory.id} className="rounded-lg border border-line p-3">
-                <p className="text-sm italic">“{s.transcript}”</p>
+                {s.transcript && <p className="text-sm italic">“{s.transcript}”</p>}
                 <div className="mt-2">
                   <Audio url={s.clip_url} label={s.memory.source_clip_id} />
                 </div>

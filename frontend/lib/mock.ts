@@ -206,14 +206,14 @@ export const mockApi: HandoverApi = {
     return { session_id, first_question_text: SCRIPT[0].question, first_question_audio_url: null };
   },
 
-  async answer(sessionId) {
+  async answer(sessionId, _audio, transcript) {
     await wait(900);
     const turn = db.sessions[sessionId];
     if (turn === undefined) throw new MockError("session not found", 404);
     const t = SCRIPT[Math.min(turn, SCRIPT.length - 1)];
     db.sessions[sessionId] = turn + 1;
     const clipId = nextId("c");
-    db.clips[clipId] = t.transcript;
+    db.clips[clipId] = transcript?.trim() || t.transcript;
     const memories_created: Memory[] = [];
     const gaps_created: Gap[] = [];
     if (t.memory) {
@@ -238,7 +238,7 @@ export const mockApi: HandoverApi = {
     }
     const next = SCRIPT[turn + 1];
     return {
-      transcript: t.transcript,
+      transcript: db.clips[clipId],
       memories_created,
       gaps_created,
       next_question_text: next ? next.question : "That covers everything I had for today. Thank you, Dana.",

@@ -61,7 +61,7 @@ export interface ForgetResponse {
 export interface AskSource {
   memory: Memory;
   clip_url: string | null;
-  transcript: string;
+  transcript: string | null;
 }
 
 export interface AskResponse {
@@ -75,6 +75,7 @@ export interface RunbookStep {
   id: string;
   text: string;
   derived_from: string[];
+  /** active | needs_review (a source memory was corrected); removed steps are not returned. */
   status: string;
 }
 
@@ -93,7 +94,8 @@ export type LiveEvent =
 
 export interface HandoverApi {
   startSession(expertId: string): Promise<StartSessionResponse>;
-  answer(sessionId: string, audio: Blob): Promise<AnswerResponse>;
+  /** Send a recorded answer, or a typed transcript (backend extension: `transcript` form field, used when there is no speech-to-text key). */
+  answer(sessionId: string, audio: Blob | null, transcript?: string): Promise<AnswerResponse>;
   listMemories(ownerId: string): Promise<Memory[]>;
   setScope(id: string, scope: MemoryScope): Promise<Memory>;
   correct(id: string, text: string): Promise<CorrectResponse>;

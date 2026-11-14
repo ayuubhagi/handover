@@ -73,6 +73,7 @@ export function Runbook() {
               <p className="text-sm">{s.text}</p>
               <p className="mt-1 font-mono text-[11px] text-muted">
                 {s.id} from {s.derived_from.join(", ")}
+                {s.status === "needs_review" && !s.leaving && <span className="ml-2 font-sans font-medium text-warn">needs review</span>}
                 {s.leaving && <span className="ml-2 font-sans font-medium text-danger">removed</span>}
               </p>
             </div>
