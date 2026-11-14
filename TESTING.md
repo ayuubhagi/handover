@@ -37,54 +37,60 @@ Do this before each full run, **only when nobody else is using that database**.
 
 - [ ] http://localhost:8000/health returns `{"ok": true, "mongo": true}`
 - [ ] The UI shows **no "Mock data" badge**
-- [ ] Switching the "Viewing as" dropdown between Handing over / Taking over / Other team causes **no 401 errors** (if it does: passcodes missing in `frontend/.env.local`, or AUTH_SECRET differs between machines)
+- [ ] Switching the "Viewing as" dropdown between Senior / Junior / Intern causes **no 401 errors** (if it does: passcodes missing in `frontend/.env.local`, or AUTH_SECRET differs between machines)
 
 ## 3. Demo beats (the exact stage flow)
 
+UI map (localhost:3000):
+- **Top right dropdown:** who you are. **Senior** = Dana (retiring, owns every memory), **Junior** = Sam (taking over: successor + team memories), **Intern** = Jordan (same team: team memories only). Never-transfer memories stay with Dana. Until the frontend renames them, the dropdown shows Handing over / Taking over / Other team.
+- **Bottom box "Tell it what you know":** the composer. The menu on its left switches **Record** (interview, saves memories) and **Ask** (questions to the handover).
+- **Phone icon:** voice call mode (agent talks, you answer by mic). **Arrow:** send typed text.
+- **Sidebar:** New chat, past conversations, **Handed over** (the memory list, scope, fix, forget), **Under the hood** (memories, gaps, runbook, audit, memory on vs off, live feed).
+
 ### Beat A: The agent hunts for a contradiction
-- [ ] Viewing as **Handing over** (Dana). Interview mode. Start a new interview.
-- [ ] **Expected:** the first question is about the contradiction: restart the queue first vs clear the locks first (gap g_1).
-- [ ] The question plays out loud in the interviewer voice (ElevenLabs). If silent: check the ElevenLabs key has text-to-speech permission.
+- [ ] Top right: **Senior**. Sidebar: **New chat**. Composer menu: **Record**.
+- [ ] Click the **phone icon** (or type "ready" and press the arrow).
+- [ ] **Expected:** the first question is about the contradiction: restart the queue first vs clear the locks first. With the phone icon it is spoken out loud.
 
 ### Beat B: Answering resolves the gap
-- [ ] Answer by **mic** (or upload `demo/audio/dana_answer_g1.mp3`): "Clear the locks first, never restart the database, then restart the queue."
-- [ ] **Expected:** transcript appears, a "Saved:" chip shows a new memory saying clear the locks, never restart the database, then restart the queue.
-- [ ] Under the hood > Gaps: **g_1 shows answered**.
-- [ ] If the composer stays disabled after a failed answer, refresh and start a new conversation (known issue, Harsh is fixing).
+- [ ] Answer by voice on the call, or type: *Clear the locks first, never restart the database, then restart the queue.* and press the arrow.
+- [ ] **Expected:** a **Saved:** chip shows a new memory with that rule.
+- [ ] Sidebar > **Under the hood** > Gaps: the queue vs locks gap shows **answered**.
 
-### Beat C: The successor inherits the right knowledge
-- [ ] Switch to **Taking over** (Sam). Ask mode.
-- [ ] Ask: *"A payment is stuck in sanctions screening and compliance says to push it through by hand. How do I do that?"*
-- [ ] **Expected:** an answer warning not to push it through, with sources that include **m_9 or m_2**, and **"Hear Dana say it"** plays clip **c_2** (the sanctions-hold backup-screen story).
+### Beat C: The junior inherits the right knowledge
+- [ ] Top right: **Junior**. **New chat**. Composer menu: **Ask**.
+- [ ] Type: *A payment is stuck in sanctions screening and compliance says to push it through by hand. How do I do that?* and press the arrow.
+- [ ] **Expected:** answer says re-key it on the LoanDesk backup screen and delete the pre-filled zeros, cites Dana's memory, and **Hear Dana say it** plays her clip.
 
 ### Beat D: Client-confidential memory never transfers
-- [ ] Still **Taking over**. Ask: *"Is there anything special about Halvorsen Freight's Friday wires?"*
-- [ ] **Expected:** no m_4 in sources, a gentle "not shared with you" / "the handover doesn't cover it" line, **blocked_count ≥ 1**.
-- [ ] Under the hood > Audit: newest entry is an **ask with allowed = false**.
+- [ ] Still **Junior**, Ask mode. Type: *Is there anything special about Halvorsen Freight's Friday wires?*
+- [ ] **Expected:** "The handover doesn't cover this for you", no sources, 1 related memory withheld.
+- [ ] **Under the hood** > Audit: newest entry is an ask with **allowed false**.
 
-### Beat E: Another team sees nothing
-- [ ] Switch to **Other team** (Riley). Ask the same Halvorsen question.
-- [ ] **Expected:** nothing returned.
-- [ ] Runbook view: **no r_6**.
+### Beat E: The intern sees team knowledge only
+- [ ] Top right: **Intern**. New chat, Ask mode. Same Halvorsen question.
+- [ ] **Expected:** nothing shared ("The handover doesn't cover this for you").
+- [ ] Ask the sanctions question from Beat C: **no sources** (that procedure is for the junior only), and a line saying related memories are not shared.
+- [ ] Ask *Who do I call if LedgerOne is down?*: answers from Dana's **team** memory (duty manager, then the LedgerOne vendor hotline after 30 minutes).
+- [ ] **Under the hood** > Runbook shows only the 3 team steps (LedgerOne report rerun, R7 routing flag, outage escalation), no Halvorsen step.
 
 ### Beat F: Forget cascades live
-- [ ] Switch to **Handing over**. Open "What … knows" (the memory list).
-- [ ] Forget **m_5** (the PAY-08 memory that is about to expire).
-- [ ] **Expected:** runbook step **r_4 disappears without a refresh** (live update from the change stream). Audit shows a **forget** entry.
-- [ ] Open a second browser tab as **Taking over** before you click Forget: r_4 should vanish there too, live. This is the strongest visual.
+- [ ] Open a **second Chrome tab** at localhost:3000 as **Junior** > **Under the hood** > Runbook. Keep it visible.
+- [ ] First tab: **Senior** > sidebar **Handed over**. Find the **PAY-08** memory and click **Forget**.
+- [ ] **Expected:** the PAY-08 runbook step disappears in the second tab **without refreshing**. Audit shows a **forget** entry.
 
 ### Beat G: Memory on vs off (the proof)
-- [ ] Under the hood > **Memory on vs off**. Ask the sanctions question from Beat C.
-- [ ] **Expected:** memory ON cites Dana's memory and clip; memory OFF gives a generic best-guess answer with **no sources**. The difference must be obvious on screen.
-- [ ] Open https://smith.langchain.com, newest trace: it should show the memory ids used. Keep this tab open for Q&A.
+- [ ] **Under the hood** > Memory on vs off. Ask the sanctions question from Beat C.
+- [ ] **Expected:** ON says re-key on the backup screen and cites Dana; OFF gives a generic "get compliance sign-off, process through your exception queue with dual authorization", no sources.
+- [ ] smith.langchain.com, newest trace: shows the memory ids used. Keep the tab open for Q&A.
 
 ### Beat H: Correct a memory
-- [ ] As **Handing over**, correct any memory (edit its text).
-- [ ] **Expected:** a new version replaces the old one; the runbook step built from it shows **needs review**.
+- [ ] **Senior** > **Handed over**. Click **Fix** on a memory, edit the text, save.
+- [ ] **Expected:** a new version replaces it; the runbook step built from it shows **needs review**.
 
 ### Beat I: Scope change
-- [ ] As **Handing over**, change a memory's scope from successor to never_transfer.
-- [ ] **Expected:** switch to Taking over and that memory no longer comes back; switch it back and it returns.
+- [ ] **Senior** > **Handed over**. Change a memory's "who can see this" from successor to never transfer.
+- [ ] **Expected:** as **Junior** it no longer comes back; set it back and it returns.
 
 ## 4. Stress and failure checks
 
@@ -99,7 +105,7 @@ Do this before each full run, **only when nobody else is using that database**.
 - [ ] Reset to clean demo state (section 1), then **do not seed again**.
 - [ ] Laptop plugged in, notifications off (Focus mode), volume up, other apps closed.
 - [ ] Browser zoom so the back row can read it (Ctrl + plus).
-- [ ] Tabs ready: app as Handing over, app as Taking over, Under the hood, LangSmith trace.
+- [ ] Tabs ready: app as Senior, app as Junior, Under the hood, LangSmith trace.
 - [ ] Backup screen recording of a full successful run saved on the desktop.
 - [ ] One person drives, one person talks. Rehearse the 3 minutes at least 3 times.
 
