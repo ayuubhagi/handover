@@ -1,0 +1,12 @@
+fastapi>=0.115
+uvicorn[standard]>=0.30
+python-multipart>=0.0.9
+pymongo>=4.12
+python-dotenv>=1.0
+httpx>=0.27
+pydantic>=2.7
+langgraph>=0.4
+langgraph-checkpoint-mongodb>=0.1.4
+langsmith>=0.3
+google-genai>=1.0
+pytest>=8
