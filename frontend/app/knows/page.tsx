@@ -20,9 +20,6 @@ export default function KnowsPage() {
     <div className="h-full overflow-y-auto px-4 pb-16 pt-14 md:pt-10">
       <div className="mx-auto max-w-5xl">
         <h1 className="font-serif text-3xl tracking-tight sm:text-4xl">Handed over</h1>
-        <p className="mt-2 max-w-xl text-muted">
-          {canEdit ? "Everything you’ve shared so far. Choose who can see each one, fix it, or forget it." : "What has been handed over that you can see."}
-        </p>
         <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           <div>
             {mems.error && <ErrorNote message={mems.error} onRetry={mems.reload} />}

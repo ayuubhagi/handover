@@ -13,9 +13,9 @@ type Phase = "connecting" | "speaking" | "listening" | "thinking" | "error";
 
 const LABEL: Record<Phase, string> = {
   connecting: "Connecting",
-  speaking: "Handover is asking",
-  listening: "Your turn. Take your time.",
-  thinking: "Saving what you said",
+  speaking: "Asking",
+  listening: "Your turn",
+  thinking: "Saving",
   error: "Something went wrong",
 };
 
@@ -101,8 +101,7 @@ export function CallScreen({
   return (
     <div className="relative flex h-full flex-col items-center justify-between overflow-hidden px-6 py-10">
       <div className="relative text-center">
-        <p className="text-sm font-medium">Recording call</p>
-        <p className="mt-0.5 font-mono text-xs text-soft">{time}</p>
+                <p className="mt-0.5 font-mono text-xs text-soft">{time}</p>
       </div>
 
       <div className="relative flex w-full max-w-xl flex-col items-center text-center">
@@ -130,7 +129,7 @@ export function CallScreen({
           <div className="mt-6 flex flex-col items-center gap-1.5">
             {saved.map((s) => (
               <span key={s} className="max-w-full truncate rounded-full bg-ok-soft px-3 py-1 text-xs text-ok">
-                ✓ Saved: {s}
+                {s}
               </span>
             ))}
           </div>
@@ -151,7 +150,7 @@ export function CallScreen({
           disabled={!listening}
           className="h-14 rounded-full bg-primary px-7 text-sm font-medium text-on-primary transition hover:opacity-90 disabled:opacity-30"
         >
-          I’m done answering
+          Done
         </button>
         <button onClick={onEnd} aria-label="End call" className="grid h-14 w-14 place-items-center rounded-full bg-danger text-white transition hover:opacity-90">
           <IconPhoneOff className="h-5 w-5" />
