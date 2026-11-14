@@ -124,7 +124,9 @@ def test_ask_never_transfer_stays_private(api):
     assert "m_4" in {s["memory"]["id"] for s in owner["sources"]}
     succ = api.post("/ask", json=q, headers=SUCCESSOR).json()
     assert "m_4" not in {s["memory"]["id"] for s in succ["sources"]}
-    assert succ["blocked_count"] >= 1
+    # Relevance cutoff: nothing off-topic is shown, and only the on-topic withheld memory is counted.
+    assert succ["sources"] == [] and succ["blocked_count"] == 1, succ
+    assert "doesn't cover" in succ["answer_text"]
 
 
 def test_ask_outsider_blocked_and_audited(api):
@@ -140,6 +142,8 @@ def test_ask_memory_off(api):
     r = api.post("/ask", json={"question": "A payment is stuck in sanctions screening and compliance says to push it through by hand. How do I do that?", "memory": False},
                  headers=SUCCESSOR).json()
     assert r["sources"] == [] and r["blocked_count"] == 0 and r["answer_text"]
+    low = r["answer_text"].lower()
+    assert not any(w in low for w in ("don't have access", "do not have access", "contact it", "consult", "zeros")), r
 
 
 def test_runbook_visibility(api):

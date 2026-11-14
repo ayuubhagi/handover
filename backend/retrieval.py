@@ -22,6 +22,7 @@ import audit
 import db
 import embeddings
 import llm
+from config import settings
 from models import clip_url, memory_out, utcnow
 
 log = logging.getLogger("handover.retrieval")
@@ -89,7 +90,7 @@ def _text_stage(question: str, filters: list[dict]) -> dict:
 def _tail(k: int, ids_only: bool) -> list[dict]:
     """Common end of every pipeline: cut to k, drop the vector, join the source clip."""
     if ids_only:
-        return [{"$limit": k}, {"$project": {"_id": 1, "scope": 1}}]
+        return [{"$limit": k}, {"$project": {"_id": 1, "scope": 1, "_score": 1}}]
     return [
         {"$limit": k},
         {"$project": {"embedding": 0}},
@@ -275,6 +276,17 @@ def _count_blocked(question: str, *, owner_id: str, scopes: list[str], k: int = 
     return sum(1 for h in hits if h.get("scope") not in scopes)
 
 
+def _relevance(qv: list[float], owner_id: str, k: int = 10) -> tuple[dict[str, tuple[str, float]], float]:
+    """Vector similarity of the top k memories across ALL scopes: {id: (scope, vectorSearchScore)} and the cutoff.
+    Only _id, scope and the score leave the database. A memory counts as relevant when its score is at least
+    RELEVANCE_MIN and within RELEVANCE_MARGIN of the best match, so one shared cutoff decides both which sources
+    are shown and which withheld memories are counted."""
+    hits, _ = _run("", qv, owner_id, None, k, ids_only=True, start="vector")
+    scores = {h["_id"]: (h.get("scope"), float(h.get("_score") or 0.0)) for h in hits}
+    top = max((s for _, s in scores.values()), default=0.0)
+    return scores, max(settings.RELEVANCE_MIN, top - settings.RELEVANCE_MARGIN)
+
+
 def related_memories(text: str, owner_id: str, *, k: int = 5, exclude_ids=()) -> list[dict]:
     """Owner level search (all scopes, active only) used by the interview agent."""
     exclude = set(exclude_ids)
@@ -284,19 +296,25 @@ def related_memories(text: str, owner_id: str, *, k: int = 5, exclude_ids=()) ->
 
 # ---------- /ask ----------
 
-_NO_MEMORY_FALLBACK = ("I have no memory of this. Without the handover notes I can only guess, "
-                       "so check with someone on the team.")
+_NO_MEMORY_FALLBACK = ("Generally, follow your team's standard procedure for this: fix the issue through the normal "
+                       "system, get the usual approvals, and document what you did.")
+
+# Memory off = a capable assistant with no handover knowledge. It must still answer, so the side-by-side shows
+# what the handover memory adds, not a refusal.
+MEMORY_OFF_SYSTEM = (
+    "You are a general-purpose assistant helping someone at a bank's payments operations team. You know common "
+    "industry practice but nothing specific about this company, its systems, clients or past incidents. "
+    "Give your best practical general answer in 2-3 sentences, as if from general banking operations experience. "
+    "Do not mention that you lack access, do not say you don't know their systems, and do not tell them to ask "
+    "someone else or contact IT."
+)
 
 
 def _answer_without_memory(question: str) -> str:
     if not llm.llm_available():
         return _NO_MEMORY_FALLBACK
     try:
-        return llm.generate_text(
-            question,
-            system="You are a generic workplace assistant with no access to this team's notes, systems or history. "
-                   "Answer briefly in 2-3 sentences.",
-        ) or _NO_MEMORY_FALLBACK
+        return llm.generate_text(question, system=MEMORY_OFF_SYSTEM, temperature=0.4) or _NO_MEMORY_FALLBACK
     except Exception as exc:
         log.warning("llm failed for memory-off answer: %s", exc)
         return _NO_MEMORY_FALLBACK
@@ -321,11 +339,11 @@ def _grounded_answer(question: str, docs: list[dict], owner_name: str) -> str:
 
 
 def _nothing_available(blocked: int) -> str:
-    text = "Nothing in the handover memory is available to you for this question."
-    if blocked:
-        noun = "memory exists" if blocked == 1 else "memories exist"
-        text += f" {blocked} related {noun} but {'is' if blocked == 1 else 'are'} not shared with you."
-    return text
+    if not blocked:
+        return "The handover doesn't cover this."
+    noun = "memory exists" if blocked == 1 else "memories exist"
+    return (f"The handover doesn't cover this for you: {blocked} related {noun} but "
+            f"{'is' if blocked == 1 else 'are'} not shared with you.")
 
 
 def _annotate_trace(**metadata) -> None:
@@ -363,7 +381,13 @@ def ask(viewer: dict, question: str, memory_on: bool = True) -> dict:
     scopes = access.allowed_scopes(viewer, owner_id)
     qv = _query_vector(question, None)
     docs, mode = _search(question, owner_id, scopes, 5, qv)
-    blocked = _count_blocked(question, owner_id=owner_id, scopes=scopes, k=5, query_vector=qv, mode=mode)
+    if qv is not None:
+        # Relevance cutoff: drop off-topic hits, and only count withheld memories that are actually on topic.
+        scores, cutoff = _relevance(qv, owner_id)
+        docs = [d for d in docs if scores.get(d["_id"], (None, 0.0))[1] >= cutoff]
+        blocked = sum(1 for scope, s in scores.values() if s >= cutoff and scope not in scopes)
+    else:  # keyword fallback: no similarity scores to cut on
+        blocked = _count_blocked(question, owner_id=owner_id, scopes=scopes, k=5, query_vector=qv, mode=mode)
 
     sources = [{
         "memory": memory_out(d),

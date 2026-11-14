@@ -35,6 +35,10 @@ class Settings:
 
     PUBLIC_BASE_URL = _get("PUBLIC_BASE_URL", "http://localhost:8000").rstrip("/")
     MEMORY_TTL_DAYS = int(_get("MEMORY_TTL_DAYS", "365"))
+    # /ask relevance cutoff on $vectorSearch scores ((1 + cosine) / 2): keep a memory when its score is at least
+    # RELEVANCE_MIN and within RELEVANCE_MARGIN of the best match. Tuned on the voyage-3.5 demo seed.
+    RELEVANCE_MIN = float(_get("RELEVANCE_MIN", "0.725"))
+    RELEVANCE_MARGIN = float(_get("RELEVANCE_MARGIN", "0.10"))
     CORS_ORIGINS = [o.strip() for o in _get("CORS_ORIGINS", "*").split(",") if o.strip()]
 
     # Auth: HMAC secret for tokens, and "u_expert:code,u_successor:code,..." passcodes for /login.
