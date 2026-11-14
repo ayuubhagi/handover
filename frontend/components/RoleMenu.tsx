@@ -28,8 +28,8 @@ export function RoleMenu() {
           icon: <span className={`block h-2 w-2 translate-y-1 rounded-full ${DOT[p.id]}`} />,
         }))}
         trigger={(o) => (
-          <span className="glass flex items-center gap-2 rounded-full border border-line py-1 pl-2.5 pr-1 text-[13px]">
-            <span className={`h-2 w-2 rounded-full ${DOT[o.value as UserId]}`} />
+          <span className="glass flex items-center gap-2 whitespace-nowrap rounded-full border border-line px-3 py-1.5 text-[13px] leading-none">
+            <span className={`h-2 w-2 shrink-0 rounded-full ${DOT[o.value as UserId]}`} />
             <span className="font-medium text-ink">{o.label}</span>
           </span>
         )}
