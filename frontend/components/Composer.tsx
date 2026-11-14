@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { IconArrowUp, IconMic, IconPhone, IconPlus, IconStop } from "./icons";
+import { IconArrowUp, IconPhone } from "./icons";
 import { Menu } from "./Menu";
 import type { Mode } from "./store";
 
-const MODES: { value: Mode; label: string; hint: string; icon: React.ReactNode }[] = [
-  { value: "interview", label: "Record", hint: "Talk it through. What you say is saved.", icon: <ModeGlyph mode="interview" /> },
-  { value: "ask", label: "Ask", hint: "Ask what has been handed over.", icon: <ModeGlyph mode="ask" /> },
+const MODES: { value: Mode; label: string; icon: React.ReactNode }[] = [
+  { value: "interview", label: "Record", icon: <ModeGlyph mode="interview" /> },
+  { value: "ask", label: "Ask", icon: <ModeGlyph mode="ask" /> },
 ];
 
 function ModeGlyph({ mode }: { mode: Mode }) {
@@ -27,10 +27,7 @@ export function Composer({
   disabled,
   mode,
   onMode,
-  onNew,
   onSend,
-  onMicStart,
-  onMicStop,
   recording,
   level,
   onCall,
@@ -40,10 +37,7 @@ export function Composer({
   disabled?: boolean;
   mode: Mode;
   onMode: (m: Mode) => void;
-  onNew: () => void;
   onSend: (text: string) => void;
-  onMicStart?: () => void;
-  onMicStop?: () => void;
   recording?: boolean;
   level?: number;
   onCall?: () => void;
@@ -102,9 +96,6 @@ export function Composer({
         )}
       </div>
       <div className="flex items-center gap-1 px-2 pb-2 pt-1">
-        <button type="button" onClick={onNew} aria-label="New conversation" className="grid h-8 w-8 place-items-center rounded-full text-muted transition hover:bg-hover hover:text-ink">
-          <IconPlus />
-        </button>
         <Menu label="Mode" value={mode} onChange={onMode} options={MODES} placement="top-start" />
         <div className="ml-auto flex items-center gap-1">
           {onCall && !recording && (
@@ -112,21 +103,10 @@ export function Composer({
               type="button"
               onClick={onCall}
               disabled={disabled}
-              className="flex h-8 items-center gap-1.5 rounded-full border border-line px-3 text-[13px] text-muted transition hover:border-accent/50 hover:bg-accent-soft hover:text-accent-ink disabled:opacity-40"
+              aria-label="Call"
+              className="grid h-8 w-8 place-items-center rounded-full text-muted transition hover:bg-accent-soft hover:text-accent-ink disabled:opacity-40"
             >
-              <IconPhone className="h-3.5 w-3.5" />
-              Call
-            </button>
-          )}
-          {onMicStart && (
-            <button
-              type="button"
-              onClick={recording ? onMicStop : onMicStart}
-              disabled={disabled && !recording}
-              aria-label={recording ? "Stop and send" : "Speak instead"}
-              className={`grid h-8 w-8 place-items-center rounded-full transition disabled:opacity-40 ${recording ? "bg-accent text-on-accent" : "text-muted hover:bg-hover hover:text-ink"}`}
-            >
-              {recording ? <IconStop /> : <IconMic />}
+              <IconPhone />
             </button>
           )}
           {!recording && (

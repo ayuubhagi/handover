@@ -8,11 +8,9 @@ import { NoriHeadphonesSticker, PipDetectiveSticker } from "stick-it-up";
 import { CallScreen } from "./CallScreen";
 import { Composer } from "./Composer";
 import { IconLock } from "./icons";
-import { dictation } from "./speech";
 import { chats, uid, useChats, type Conversation, type Message } from "./store";
 import { Button, ErrorNote, PlayButton } from "./ui";
 import type { Mode } from "./store";
-import { useRecorder } from "./useRecorder";
 
 const SUGGESTIONS = [
   "When should I restart the payments queue?",
@@ -30,17 +28,7 @@ export function Chat() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const [calling, setCalling] = useState(false);
-  const [dictating, setDictating] = useState(false);
-  const rec = useRecorder();
   const scroller = useRef<HTMLDivElement>(null);
-  const dict = useRef<ReturnType<typeof dictation>>(null);
-  const [canDictate, setCanDictate] = useState(false);
-
-  useEffect(() => {
-    // Feature check after mount (browser only).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCanDictate(!!dictation());
-  }, []);
 
   useEffect(() => {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" });
@@ -108,38 +96,6 @@ export function Chat() {
     }
   }
 
-  async function micStart() {
-    if (mode === "ask") {
-      const d = dictation();
-      if (!d) return;
-      dict.current = d;
-      let finalText = "";
-      d.onresult = (e) => {
-        finalText = Array.from(e.results as ArrayLike<ArrayLike<{ transcript: string }>>)
-          .map((r) => r[0].transcript)
-          .join(" ");
-      };
-      d.onend = () => {
-        setDictating(false);
-        if (finalText.trim()) ask(finalText.trim());
-      };
-      d.onerror = () => setDictating(false);
-      d.start();
-      setDictating(true);
-      return;
-    }
-    await rec.start();
-  }
-
-  async function micStop() {
-    if (mode === "ask") {
-      dict.current?.stop();
-      return;
-    }
-    const blob = await rec.stop();
-    if (blob && active) answer(active, blob);
-  }
-
   const notExpert = mode === "interview" && user !== "u_expert";
   const empty = !active || active.messages.length === 0;
 
@@ -157,7 +113,7 @@ export function Chat() {
   const switchMode = (m: Mode) => {
     if (m !== mode) chats.setMode(m);
   };
-  const shared = { mode, onMode: switchMode, onNew: () => chats.newChat() };
+  const shared = { mode, onMode: switchMode };
 
   const composer =
     mode === "ask" ? (
@@ -166,9 +122,6 @@ export function Chat() {
         placeholder="Ask anything that was handed over"
         disabled={!!busy}
         onSend={ask}
-        onMicStart={canDictate ? micStart : undefined}
-        onMicStop={micStop}
-        recording={dictating}
         autoFocus
       />
     ) : (
@@ -180,18 +133,14 @@ export function Chat() {
           const conv = active?.sessionId ? active : await startInterview();
           if (conv) answer(conv, null, t);
         }}
-        onMicStart={micStart}
-        onMicStop={micStop}
-        recording={rec.recording}
-        level={rec.level}
         onCall={() => setCalling(true)}
         autoFocus
       />
     );
 
-  const errors = (error || rec.error) && (
+  const errors = error && (
     <div className="mx-auto mb-3 w-full max-w-2xl">
-      <ErrorNote message={(error || rec.error)!} />
+      <ErrorNote message={error} />
     </div>
   );
 
@@ -208,11 +157,6 @@ export function Chat() {
           <h1 className="text-balance text-center font-serif text-4xl tracking-tight sm:text-5xl">
             {recording ? "What do you know that nobody else does?" : "What do you need to know?"}
           </h1>
-          <p className="mx-auto mt-3 max-w-md text-center text-[15px] text-muted">
-            {recording
-              ? "Talk or type. Handover asks the questions and keeps your answers for whoever takes over."
-              : "Ask about anything that was handed over. Every answer links back to the original recording."}
-          </p>
           <div className="mt-8">
             {errors}
             {notExpert ? <ExpertOnly /> : composer}

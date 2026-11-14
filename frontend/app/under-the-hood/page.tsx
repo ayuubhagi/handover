@@ -11,11 +11,8 @@ import { API_URL, USE_MOCKS } from "../../lib/config";
 import { useLive, useLoad, useUserId } from "../../lib/hooks";
 import type { LiveEvent } from "../../lib/types";
 
-const TABS = ["Memories", "Gaps", "Runbook", "Audit", "Memory on vs off", "Live feed"] as const;
-type Tab = (typeof TABS)[number];
 
 export default function UnderTheHood() {
-  const [tab, setTab] = useState<Tab>("Memories");
   const user = useUserId();
   const mems = useLoad(() => api.listMemories("u_expert"));
   const gaps = useLoad(() => api.gaps("u_expert"));
@@ -34,7 +31,7 @@ export default function UnderTheHood() {
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="font-serif text-3xl tracking-tight sm:text-4xl">Under the hood</h1>
-            <p className="mt-2 text-muted">Governed memory: scopes, versions, derivations, audit and live change streams.</p>
+            
           </div>
           <div className="flex items-center gap-2 text-xs">
             <span className={`rounded-full px-2.5 py-1 font-medium ${USE_MOCKS ? "bg-warn-soft text-warn" : "bg-ok-soft text-ok"}`}>{USE_MOCKS ? "Mock data" : `API ${API_URL}`}</span>
@@ -45,23 +42,9 @@ export default function UnderTheHood() {
           </div>
         </div>
 
-        <div role="tablist" className="mt-6 flex gap-1 overflow-x-auto border-b border-line">
-          {TABS.map((t) => (
-            <button
-              key={t}
-              role="tab"
-              aria-selected={tab === t}
-              onClick={() => setTab(t)}
-              className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition ${tab === t ? "border-accent text-ink" : "border-transparent text-muted hover:text-ink"}`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-6">
-          {tab === "Memories" && <MemoryList memories={mems.data} loading={mems.loading} error={mems.error} reload={mems.reload} canEdit={user === "u_expert"} />}
-          {tab === "Gaps" && (
+        <div className="mt-8 space-y-6">
+          {<MemoryList memories={mems.data} loading={mems.loading} error={mems.error} reload={mems.reload} canEdit={user === "u_expert"} />}
+          {(
             <Card title="Gaps and contradictions">
               {gaps.error && <ErrorNote message={gaps.error} onRetry={gaps.reload} />}
               {gaps.loading && !gaps.data && <Loading />}
@@ -80,10 +63,10 @@ export default function UnderTheHood() {
               </ul>
             </Card>
           )}
-          {tab === "Runbook" && <Runbook />}
-          {tab === "Audit" && <AuditLog />}
-          {tab === "Memory on vs off" && <Compare />}
-          {tab === "Live feed" && (
+          {<Runbook />}
+          {<AuditLog />}
+          {<Compare />}
+          {(
             <Card title="WS /live events">
               {events.length === 0 && <p className="text-sm text-muted">Waiting for changes. Answer, fix or forget something to see events.</p>}
               <ul className="space-y-1.5 font-mono text-xs">

@@ -25,7 +25,6 @@ export function RoleMenu() {
         options={PEOPLE.map((p) => ({
           value: p.id,
           label: p.name,
-          hint: p.role,
           icon: <span className={`block h-2 w-2 translate-y-1 rounded-full ${DOT[p.id]}`} />,
         }))}
         trigger={(o) => (

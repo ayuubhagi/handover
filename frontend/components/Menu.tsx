@@ -88,11 +88,8 @@ export function Menu<T extends string>({
             else return;
             e.preventDefault();
           }}
-          className={`menu-pop absolute z-50 min-w-60 rounded-2xl border border-line bg-raised/95 p-1.5 shadow-[var(--shadow-pop)] backdrop-blur-xl outline-none ${placement === "bottom-end" ? "right-0 top-full mt-2 origin-top-right" : "bottom-full left-0 mb-2 origin-bottom-left"}`}
+          className={`menu-pop absolute z-50 min-w-40 rounded-2xl border border-line bg-raised/95 p-1.5 shadow-[var(--shadow-pop)] backdrop-blur-xl outline-none ${placement === "bottom-end" ? "right-0 top-full mt-2 origin-top-right" : "bottom-full left-0 mb-2 origin-bottom-left"}`}
         >
-          <li className="px-2.5 pb-1 pt-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-soft" aria-hidden="true">
-            {label}
-          </li>
           {options.map((o, i) => (
             <li
               key={o.value}
