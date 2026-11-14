@@ -64,7 +64,7 @@ Gap object: `{ "id", "question", "kind", "from_memory_ids", "status": "open | as
 ## Status (each person updates their own line)
 - Ayuub (backend): all contract routes built in /backend (see backend/ARCHITECTURE.md). Not yet tested against Atlas. Run: cd backend, pip install -r requirements.txt, python seed.py, uvicorn main:app. Browser audio and the /live websocket can pass ?user_id= instead of the X-User-Id header.
 - Harsh (frontend): Next.js app in /frontend builds clean. Typed client for every contract endpoint + WS /live, mock mode (NEXT_PUBLIC_USE_MOCKS=true, shows a "Mock data" badge). Screens: expert (interview, scope/correct/forget, gaps), successor (ask + live runbook), memory on vs off, audit. Next: wire to real backend.
-- Keith (demo): demo content in /demo (DEMO.md live + video scripts, RESEARCH.md real incidents, seed_content.py, generate_audio.py). Waiting on an ElevenLabs key to generate audio.
+- Keith (demo): demo content done and merged (demo/DEMO.md, demo/RESEARCH.md, demo/seed_content.py). Dana and Sam audio generated with ElevenLabs. Waiting on Ayuub to swap the seed (see task below), then rehearsal and video.
 
 ## Requests (append, newest at bottom, format: [time] Name -> Name: request)
 
@@ -77,3 +77,17 @@ Gap object: `{ "id", "question", "kind", "from_memory_ids", "status": "open | as
 [12:55] Keith -> Ayuub: proposed new seed content in demo/seed_content.py (same CLIPS/MEMORIES/RUNBOOK/GAPS shapes as seed.py; each memory is based on a real incident, see demo/RESEARCH.md). If you agree, swap those lists into backend/seed.py. Audio for c_1..c_7 will be generated into backend/seed_audio/ by demo/generate_audio.py, and I'll ping you to re-seed.
 [12:55] Keith -> team: need the ElevenLabs API key shared privately (not committed) to generate the Dana and Sam voices.
 [13:20] Keith -> Ayuub: audio is in backend/seed_audio/c_1..c_7.mp3 (PR keith/demo-recent). It's voiced from demo/seed_content.py, NOT the current seed.py text, so please swap CLIPS/MEMORIES/RUNBOOK/GAPS from demo/seed_content.py into seed.py, then re-seed. c_2 changed: it's now the sanctions-hold backup-screen story (based on Citi's 2024 $81T near miss).
+
+[13:35] Keith -> Ayuub: TASK FOR YOUR AGENT, swap in the demo seed content. Steps:
+  1. In backend/seed.py, replace the CLIPS, MEMORIES, RUNBOOK and GAPS lists with the ones in demo/seed_content.py. Copy them verbatim (same shapes as yours). Leave PEOPLE and everything else in seed.py as is.
+  2. Keep the clip ids c_1 to c_7. The matching audio is already committed at backend/seed_audio/c_1.mp3 to c_7.mp3, and seed.py already loads files from there.
+  3. Keep m_5's expiry at 21 days (it's the memory that expires when PAY-08 is switched off) and m_4's scope as never_transfer.
+  4. Run python seed.py against Atlas. Expected: 7 clips (all with audio), 9 memories, 6 runbook steps, 2 gaps.
+  5. Check the demo beats work against the real backend:
+     a. As u_expert, POST /sessions: the first question should be gap g_1 (queue first vs clear the locks first).
+     b. Answer it by uploading demo/audio/dana_answer_g1.mp3 to POST /sessions/{id}/answer. It should resolve g_1 and create a memory that says clear the locks, never restart the database, then restart the queue.
+     c. As u_successor, POST /ask with "A payment is stuck in sanctions screening and compliance says to push it through by hand. How do I do that?" With memory true, sources should include m_9 or m_2 with clip c_2. With memory false, the answer should be generic.
+     d. As u_successor, ask "Is there anything special about Halvorsen Freight's Friday wires?": no m_4 in sources, blocked_count >= 1, and an audit entry with allowed false.
+     e. As u_outsider, the same Halvorsen question returns nothing, and /runbook shows no r_6.
+     f. As u_expert, POST /memories/m_5/forget: runbook step r_4 should disappear, with a runbook_changed push on /live.
+  6. Don't edit /demo. Reply here with what passed or failed, and I'll fix the content side.
