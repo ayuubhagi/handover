@@ -379,9 +379,10 @@ def ask(viewer: dict, question: str, memory_on: bool = True) -> dict:
         answer = _nothing_available(blocked)
 
     reason = (f"scopes [{', '.join(scopes) or 'none'}] for {viewer_id}: "
-              f"{len(sources)} source(s) returned, {blocked} blocked by scope")
+              f"{len(sources)} source(s) returned, {blocked} withheld by scope")
+    # allowed=false whenever the query pre-filter withheld anything, so every denial is visible in the audit log.
     audit_id = audit.write_audit(
-        viewer_id, "ask", used_ids, len(sources) > 0 or blocked == 0, reason,
+        viewer_id, "ask", used_ids, blocked == 0, reason,
         detail={"memory_on": True, "question": question[:500], "retrieval_mode": mode, "blocked_count": blocked},
     )
     _annotate_trace(viewer_id=viewer_id, used_memory_ids=used_ids, blocked_count=blocked, retrieval_mode=mode,
