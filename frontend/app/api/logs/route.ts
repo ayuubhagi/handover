@@ -1,9 +1,12 @@
-// Appends browser debug logs to frontend/logs/client.jsonl (git-ignored).
+// Keep runtime logs outside the Next.js project root. Writing them under
+// frontend/ makes Turbopack refresh the page, which logs another page load and
+// creates an infinite refresh loop.
 // On in `next dev`; off in production builds unless HANDOVER_LOGS=1. HANDOVER_LOGS=0 always turns it off.
 import { appendFile, mkdir, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 
-const DIR = path.join(process.cwd(), "logs");
+const DIR = path.join(tmpdir(), "handover-logs");
 const FILE = path.join(DIR, "client.jsonl");
 const MAX_FILE = 20 * 1024 * 1024;
 const LEVELS = new Set(["info", "warn", "error"]);
