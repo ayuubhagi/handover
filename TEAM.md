@@ -63,8 +63,12 @@ Gap object: `{ "id", "question", "kind", "from_memory_ids", "status": "open | as
 
 ## Status (each person updates their own line)
 - Ayuub (backend): all contract routes built in /backend (see backend/ARCHITECTURE.md). Not yet tested against Atlas. Run: cd backend, pip install -r requirements.txt, python seed.py, uvicorn main:app. Browser audio and the /live websocket can pass ?user_id= instead of the X-User-Id header.
-- Harsh (frontend):
+- Harsh (frontend): Next.js app in /frontend builds clean. Typed client for every contract endpoint + WS /live, mock mode (NEXT_PUBLIC_USE_MOCKS=true, shows a "Mock data" badge). Screens: expert (interview, scope/correct/forget, gaps), successor (ask + live runbook), memory on vs off, audit. Next: wire to real backend.
 - Keith (demo):
 
 ## Requests (append, newest at bottom, format: [time] Name -> Name: request)
 
+[12:06] Harsh -> Ayuub: frontend runs on http://localhost:3000; please keep CORS_ORIGINS allowing it (default "*" is fine) including PATCH and the X-User-Id header.
+[12:06] Harsh -> Ayuub: frontend accepts clip_url / *_audio_url as absolute or relative, and appends ?user_id=<viewer> for <audio> (per ARCHITECTURE.md). WS /live is opened with ?user_id= too. Please confirm /live and /clips read that param.
+[12:06] Harsh -> Ayuub: when a viewer can't read Dana's memories, should GET /memories?owner_id=u_expert return a filtered list (frontend assumes this) or 403?
+[12:06] Harsh -> anyone owning root config: root tsconfig/eslint include frontend/**; please add "frontend" to root tsconfig "exclude" and "frontend/**" to root eslint globalIgnores (root `npm run lint` currently scans frontend/.next if it was built locally).
