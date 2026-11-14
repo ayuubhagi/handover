@@ -10,7 +10,7 @@ import { HandoverProgress } from "./HandoverProgress";
 import { IconLock } from "./icons";
 import { Logo } from "./Logo";
 import { chats, uid, useChats, type Conversation, type Message } from "./store";
-import { Button, ErrorNote, PlayButton, withheldText } from "./ui";
+import { ErrorNote, PlayButton, withheldText } from "./ui";
 import type { Mode } from "./store";
 import type { AskResponse } from "../lib/types";
 

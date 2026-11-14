@@ -26,3 +26,6 @@ export const IconChat = (p: P) => base(<path d="M4 5h16v11H8l-4 4V5Z" />, p);
 export const IconMenu = (p: P) => base(<path d="M4 7h16M4 12h16M4 17h16" />, p);
 export const IconChevron = (p: P) => base(<path d="m6 9 6 6 6-6" />, p);
 export const IconUser = (p: P) => base(<><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>, p);
+export const IconKey = (p: P) => base(<><circle cx="8" cy="15" r="4" /><path d="m11 12 9-9M17 6l3 3M15 8l2 2" /></>, p);
+export const IconUsers = (p: P) => base(<><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6" /></>, p);
+export const IconCircle = (p: P) => base(<circle cx="12" cy="12" r="8" />, p);
