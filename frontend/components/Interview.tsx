@@ -20,6 +20,7 @@ export function Interview({ onChange }: { onChange: () => void }) {
   const [busy, setBusy] = useState<"start" | "upload" | null>(null);
   const [recording, setRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [typed, setTyped] = useState("");
   const recorder = useRef<MediaRecorder | null>(null);
   const chunks = useRef<Blob[]>([]);
   const audioEl = useRef<HTMLAudioElement | null>(null);
@@ -74,11 +75,13 @@ export function Interview({ onChange }: { onChange: () => void }) {
     setRecording(false);
   }
 
-  async function upload(blob: Blob) {
+  async function upload(blob: Blob | null, transcript?: string) {
     if (!sessionId || !question) return;
     setBusy("upload");
+    setError(null);
     try {
-      const r = await api.answer(sessionId, blob);
+      const r = await api.answer(sessionId, blob, transcript);
+      if (transcript) setTyped("");
       setTurns((t) => [
         { question: question.text, transcript: r.transcript, memories: r.memories_created, gaps: r.gaps_created, used: r.used_memory_ids },
         ...t,
@@ -129,6 +132,25 @@ export function Interview({ onChange }: { onChange: () => void }) {
               New session
             </Button>
           </div>
+          <form
+            className="flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (typed.trim()) upload(null, typed);
+            }}
+          >
+            <input
+              aria-label="Type an answer instead"
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              placeholder="Or type the answer"
+              disabled={!!busy || recording}
+              className="min-w-0 flex-1 rounded-lg border border-line bg-transparent px-3 py-2 text-sm"
+            />
+            <Button type="submit" variant="ghost" disabled={!!busy || recording || !typed.trim()}>
+              Send
+            </Button>
+          </form>
         </div>
       )}
       {error && (
