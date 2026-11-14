@@ -8,7 +8,7 @@ import { Card, ErrorNote, Loading } from "./ui";
 
 type Shown = RunbookStep & { leaving?: boolean; fresh?: boolean };
 
-export function Runbook() {
+export function Runbook({ simple = false }: { simple?: boolean }) {
   const user = useUserId();
   const [steps, setSteps] = useState<Shown[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +50,7 @@ export function Runbook() {
 
   return (
     <Card
-      title="Runbook"
+      title={simple ? "Checklist" : "Runbook"}
       aside={
         <span className="flex items-center gap-1.5 text-xs text-muted">
           <span className={`h-2 w-2 rounded-full ${live ? "bg-accent" : "bg-line"}`} />
@@ -71,11 +71,19 @@ export function Runbook() {
             <span className="mt-0.5 w-5 shrink-0 text-right font-mono text-xs text-muted">{i + 1}</span>
             <div>
               <p className="text-sm">{s.text}</p>
-              <p className="mt-1 font-mono text-[11px] text-muted">
+              {simple ? (
+                (s.status === "needs_review" || s.leaving) && (
+                  <p className="mt-1 text-xs font-medium">
+                    {s.leaving ? <span className="text-danger">Removed</span> : <span className="text-warn">Needs a check</span>}
+                  </p>
+                )
+              ) : (
+<p className="mt-1 font-mono text-[11px] text-muted">
                 {s.id} from {s.derived_from.join(", ")}
                 {s.status === "needs_review" && !s.leaving && <span className="ml-2 font-sans font-medium text-warn">needs review</span>}
                 {s.leaving && <span className="ml-2 font-sans font-medium text-danger">removed</span>}
               </p>
+              )}
             </div>
           </li>
         ))}

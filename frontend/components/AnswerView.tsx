@@ -1,7 +1,7 @@
 "use client";
 
 import type { AskResponse } from "../lib/types";
-import { Audio, MemoryMeta } from "./ui";
+import { MemoryMeta, PlayButton } from "./ui";
 
 export function AnswerView({ r }: { r: AskResponse }) {
   return (
@@ -20,7 +20,7 @@ export function AnswerView({ r }: { r: AskResponse }) {
               <li key={s.memory.id} className="rounded-lg border border-line p-3">
                 {s.transcript && <p className="text-sm italic">“{s.transcript}”</p>}
                 <div className="mt-2">
-                  <Audio url={s.clip_url} label={s.memory.source_clip_id} />
+                  <PlayButton url={s.clip_url} text={s.transcript ?? undefined} label={`Play ${s.memory.source_clip_id}`} />
                 </div>
                 <div className="mt-2">
                   <MemoryMeta m={s.memory} />

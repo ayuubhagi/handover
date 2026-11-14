@@ -1,0 +1,108 @@
+"use client";
+
+import { useState } from "react";
+import { AuditLog } from "../../components/AuditLog";
+import { Compare } from "../../components/Compare";
+import { MemoryList } from "../../components/MemoryList";
+import { Runbook } from "../../components/Runbook";
+import { Card, ErrorNote, Loading, Tag } from "../../components/ui";
+import { api } from "../../lib/api";
+import { API_URL, USE_MOCKS } from "../../lib/config";
+import { useLive, useLoad, useUserId } from "../../lib/hooks";
+import type { LiveEvent } from "../../lib/types";
+
+const TABS = ["Memories", "Gaps", "Runbook", "Audit", "Memory on vs off", "Live feed"] as const;
+type Tab = (typeof TABS)[number];
+
+export default function UnderTheHood() {
+  const [tab, setTab] = useState<Tab>("Memories");
+  const user = useUserId();
+  const mems = useLoad(() => api.listMemories("u_expert"));
+  const gaps = useLoad(() => api.gaps("u_expert"));
+  const [events, setEvents] = useState<{ at: string; e: LiveEvent }[]>([]);
+  const connected = useLive((e) => {
+    setEvents((all) => [{ at: new Date().toLocaleTimeString(), e }, ...all].slice(0, 50));
+    if (e.type === "memory_changed") {
+      mems.reload();
+      gaps.reload();
+    }
+  });
+
+  return (
+    <div className="h-full overflow-y-auto px-4 pb-16 pt-14 md:pt-10">
+      <div className="mx-auto max-w-5xl">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="font-serif text-3xl tracking-tight sm:text-4xl">Under the hood</h1>
+            <p className="mt-2 text-muted">Governed memory: scopes, versions, derivations, audit and live change streams.</p>
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            <span className={`rounded-full px-2.5 py-1 font-medium ${USE_MOCKS ? "bg-warn-soft text-warn" : "bg-ok-soft text-ok"}`}>{USE_MOCKS ? "Mock data" : `API ${API_URL}`}</span>
+            <span className="flex items-center gap-1.5 text-muted">
+              <span className={`h-2 w-2 rounded-full ${connected ? "bg-ok" : "bg-line-strong"}`} />
+              {connected ? "WS /live connected" : "WS reconnecting"}
+            </span>
+          </div>
+        </div>
+
+        <div role="tablist" className="mt-6 flex gap-1 overflow-x-auto border-b border-line">
+          {TABS.map((t) => (
+            <button
+              key={t}
+              role="tab"
+              aria-selected={tab === t}
+              onClick={() => setTab(t)}
+              className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition ${tab === t ? "border-accent text-ink" : "border-transparent text-muted hover:text-ink"}`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-6">
+          {tab === "Memories" && <MemoryList memories={mems.data} loading={mems.loading} error={mems.error} reload={mems.reload} canEdit={user === "u_expert"} />}
+          {tab === "Gaps" && (
+            <Card title="Gaps and contradictions">
+              {gaps.error && <ErrorNote message={gaps.error} onRetry={gaps.reload} />}
+              {gaps.loading && !gaps.data && <Loading />}
+              {gaps.data?.length === 0 && <p className="text-sm text-muted">No gaps.</p>}
+              <ul className="space-y-2">
+                {gaps.data?.map((g) => (
+                  <li key={g.id} className="rounded-xl border border-line p-3 text-sm">
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                      <Tag tone={g.kind === "contradiction" ? "never_transfer" : "neutral"}>{g.kind}</Tag>
+                      <Tag>{g.status}</Tag>
+                      <span className="font-mono text-xs text-muted">{g.id} from {g.from_memory_ids.join(", ") || "none"}</span>
+                    </div>
+                    {g.question}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+          {tab === "Runbook" && <Runbook />}
+          {tab === "Audit" && <AuditLog />}
+          {tab === "Memory on vs off" && <Compare />}
+          {tab === "Live feed" && (
+            <Card title="WS /live events">
+              {events.length === 0 && <p className="text-sm text-muted">Waiting for changes. Answer, fix or forget something to see events.</p>}
+              <ul className="space-y-1.5 font-mono text-xs">
+                {events.map((x, i) => (
+                  <li key={i} className="flex gap-3">
+                    <span className="text-soft">{x.at}</span>
+                    <span className="text-accent-ink">{x.e.type}</span>
+                    {x.e.type === "memory_changed" && (
+                      <span className="text-muted">
+                        {x.e.memory.id} {x.e.memory.status} {x.e.memory.scope} v{x.e.memory.version}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

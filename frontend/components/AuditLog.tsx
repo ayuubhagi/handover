@@ -1,18 +1,18 @@
 "use client";
 
-import { Button, Card, ErrorNote, Loading } from "../../components/ui";
-import { api } from "../../lib/api";
-import { useLive, useLoad } from "../../lib/hooks";
-import { personName } from "../../lib/types";
+import { Button, Card, ErrorNote, Loading } from "./ui";
+import { api } from "../lib/api";
+import { useLive, useLoad } from "../lib/hooks";
+import { personName } from "../lib/types";
 
-export default function AuditPage() {
+export function AuditLog() {
   const audit = useLoad(() => api.audit(20));
   useLive(() => audit.reload());
 
   return (
     <div>
-      <div className="mb-8 max-w-2xl">
-        <h1 className="font-serif text-3xl tracking-tight">Audit</h1>
+      <div className="mb-5 max-w-2xl">
+        <h2 className="text-lg font-semibold">Audit</h2>
         <p className="mt-2 text-muted">Every read and governance action: who did it, which memories, whether it was allowed, and why.</p>
       </div>
       <Card title="Latest 20" aside={<Button variant="ghost" onClick={audit.reload}>Refresh</Button>}>

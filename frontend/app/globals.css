@@ -1,27 +1,90 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* One token system, light + dark. Warm neutral surfaces, a single orange accent. */
 :root {
-  --bg: #f7f6f3;
+  --bg: #f8f7f3;
+  --sidebar: #f1efe9;
   --surface: #ffffff;
-  --ink: #1c1b19;
-  --muted: #6b6862;
-  --line: #e6e3dc;
-  --accent: #1f5f5b;
-  --accent-soft: #e4efed;
-  --danger: #a33a2c;
-  --danger-soft: #f8e9e6;
+  --raised: #ffffff;
+  --ink: #23221f;
+  --muted: #6b6963;
+  --soft: #8a8780;
+  --line: #e6e4dd;
+  --line-strong: #d6d3ca;
+  --hover: #ebe9e2;
+  --active: #e3e0d8;
+  --accent: #d9622b;
+  --accent-ink: #b34a17;
+  --accent-soft: #fbeee6;
+  --on-accent: #ffffff;
+  --primary: #2a2926;
+  --on-primary: #ffffff;
+  --ok: #3f7a52;
+  --ok-soft: #e7f1ea;
+  --danger: #a8402e;
+  --danger-soft: #f7e8e4;
   --warn: #8a5a12;
-  --warn-soft: #f7eedb;
+  --warn-soft: #f6eedd;
+  --glow-a: rgba(234, 120, 60, 0.22);
+  --glow-b: rgba(255, 190, 120, 0.18);
+  --glass: rgba(255, 255, 255, 0.72);
+  --shadow-pop: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(0, 0, 0, 0.07);
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #161513;
+  --sidebar: #1c1b19;
+  --surface: #222120;
+  --raised: #2a2927;
+  --ink: #f1efe9;
+  --muted: #aeaba3;
+  --soft: #8c8981;
+  --line: #2f2e2b;
+  --line-strong: #3d3c38;
+  --hover: #2a2926;
+  --active: #33322e;
+  --accent: #f07a3e;
+  --accent-ink: #ff9a63;
+  --accent-soft: #3a2519;
+  --on-accent: #1a110b;
+  --primary: #f1efe9;
+  --on-primary: #161513;
+  --ok: #8fcf9f;
+  --ok-soft: #1f2e24;
+  --danger: #ff9c88;
+  --danger-soft: #3a2420;
+  --warn: #f0c27a;
+  --warn-soft: #36291a;
+  --glow-a: rgba(240, 110, 50, 0.28);
+  --glow-b: rgba(255, 150, 80, 0.12);
+  --glass: rgba(34, 33, 32, 0.72);
+  --shadow-pop: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-bg: var(--bg);
+  --color-sidebar: var(--sidebar);
   --color-surface: var(--surface);
+  --color-raised: var(--raised);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
+  --color-soft: var(--soft);
   --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-hover: var(--hover);
+  --color-active: var(--active);
   --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
   --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-warn: var(--warn);
@@ -30,23 +93,110 @@
   --font-serif: var(--font-serif-display);
 }
 
+html,
+body {
+  height: 100%;
+}
 body {
   background: var(--bg);
   color: var(--ink);
 }
+::selection {
+  background: var(--accent-soft);
+}
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+[role="tab"]:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: 2px;
+}
+input:focus,
+textarea:focus {
+  outline: none;
+}
 
-/* Runbook step leaving: fade, strike, then collapse. */
+/* Quiet scrollbars. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+/* Orange atmosphere behind the greeting and the call screen. */
+.atmosphere {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.atmosphere::before,
+.atmosphere::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+}
+.atmosphere::before {
+  width: 620px;
+  height: 420px;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, var(--glow-a), transparent);
+}
+.atmosphere::after {
+  width: 520px;
+  height: 320px;
+  left: 58%;
+  top: 30%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, var(--glow-b), transparent);
+}
+
+.glass {
+  background: var(--glass);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+}
+
+/* Message enter. */
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.msg-in { animation: msg-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* Typing dots. */
+@keyframes dot {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-2px); }
+}
+.dots span { display: inline-block; width: 6px; height: 6px; margin: 0 2px; border-radius: 50%; background: var(--soft); animation: dot 1.2s infinite; }
+.dots span:nth-child(2) { animation-delay: 0.15s; }
+.dots span:nth-child(3) { animation-delay: 0.3s; }
+
+/* Call screen orb. */
+@keyframes orb-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+@keyframes ring {
+  from { transform: scale(0.9); opacity: 0.55; }
+  to { transform: scale(1.7); opacity: 0; }
+}
+.orb { animation: orb-breathe 3.2s ease-in-out infinite; }
+.orb-ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--accent); animation: ring 1.8s ease-out infinite; }
+.orb-ring:nth-child(2) { animation-delay: 0.6s; }
+.orb-ring:nth-child(3) { animation-delay: 1.2s; }
+
+/* Checklist step leaving: fade, strike, then collapse. */
 @keyframes step-leave {
   0% { opacity: 1; max-height: 160px; }
   40% { opacity: 0.6; background: var(--danger-soft); max-height: 160px; }
   100% { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; margin: 0; border-width: 0; }
 }
-.step-leaving {
-  animation: step-leave 1.6s ease-in forwards;
-  overflow: hidden;
-}
+.step-leaving { animation: step-leave 1.6s ease-in forwards; overflow: hidden; }
 .step-leaving p { text-decoration: line-through; }
-
 @keyframes step-enter {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: none; }
@@ -55,5 +205,5 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .step-leaving { animation-duration: 0.01s; animation-delay: 1.2s; }
-  .step-enter { animation: none; }
+  .step-enter, .msg-in, .orb, .orb-ring, .dots span { animation: none; }
 }

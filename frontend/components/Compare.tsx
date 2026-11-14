@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { AnswerView } from "../../components/AnswerView";
-import { Button, Card, ErrorNote, Loading } from "../../components/ui";
-import { api, errorMessage } from "../../lib/api";
-import type { AskResponse } from "../../lib/types";
+import { AnswerView } from "./AnswerView";
+import { Button, Card, ErrorNote, Loading } from "./ui";
+import { api, errorMessage } from "../lib/api";
+import type { AskResponse } from "../lib/types";
 
 type Side = { r: AskResponse | null; error: string | null };
 
-export default function ComparePage() {
+export function Compare() {
   const [q, setQ] = useState("When should I restart the payments queue?");
   const [busy, setBusy] = useState(false);
   const [on, setOn] = useState<Side>({ r: null, error: null });
@@ -34,8 +34,8 @@ export default function ComparePage() {
 
   return (
     <div>
-      <div className="mb-8 max-w-2xl">
-        <h1 className="font-serif text-3xl tracking-tight">Memory on vs off</h1>
+      <div className="mb-5 max-w-2xl">
+        <h2 className="text-lg font-semibold">Memory on vs off</h2>
         <p className="mt-2 text-muted">The same question, with and without Dana’s governed memories.</p>
       </div>
       <form
