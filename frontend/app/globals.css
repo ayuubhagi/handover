@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --ink: #1c1b19;
+  --muted: #6b6862;
+  --line: #e6e3dc;
+  --accent: #1f5f5b;
+  --accent-soft: #e4efed;
+  --danger: #a33a2c;
+  --danger-soft: #f8e9e6;
+  --warn: #8a5a12;
+  --warn-soft: #f7eedb;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-serif-display);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+/* Runbook step leaving: fade, strike, then collapse. */
+@keyframes step-leave {
+  0% { opacity: 1; max-height: 160px; }
+  40% { opacity: 0.6; background: var(--danger-soft); max-height: 160px; }
+  100% { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; margin: 0; border-width: 0; }
+}
+.step-leaving {
+  animation: step-leave 1.6s ease-in forwards;
+  overflow: hidden;
+}
+.step-leaving p { text-decoration: line-through; }
+
+@keyframes step-enter {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+.step-enter { animation: step-enter 0.4s ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .step-leaving { animation-duration: 0.01s; animation-delay: 1.2s; }
+  .step-enter { animation: none; }
+}
