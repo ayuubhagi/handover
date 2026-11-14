@@ -62,7 +62,7 @@ Memory object:
 Gap object: `{ "id", "question", "kind", "from_memory_ids", "status": "open | asked | answered" }`
 
 ## Status (each person updates their own line)
-- Ayuub (backend):
+- Ayuub (backend): all contract routes built in /backend (see backend/ARCHITECTURE.md). Not yet tested against Atlas. Run: cd backend, pip install -r requirements.txt, python seed.py, uvicorn main:app. Browser audio and the /live websocket can pass ?user_id= instead of the X-User-Id header.
 - Harsh (frontend):
 - Keith (demo):
 
