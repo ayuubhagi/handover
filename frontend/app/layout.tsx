@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Source_Serif_4 } from "next/font/google";
+import { LogCapture } from "../components/LogCapture";
 import { AsciiBackdrop } from "../components/AsciiBackdrop";
 import { RoleMenu } from "../components/RoleMenu";
 import { Sidebar } from "../components/Sidebar";
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
       <body className="font-sans">
+        <LogCapture />
         <AsciiBackdrop />
         <RoleMenu />
         <div className="relative flex h-dvh overflow-hidden">

@@ -2,6 +2,7 @@ import { API_URL, USE_MOCKS } from "./config";
 import { mockApi } from "./mock";
 import { cachedToken, clearToken, getToken } from "./auth";
 import { getUserId } from "./session";
+import { dlog } from "./debuglog";
 import type {
   UserId,
   AnswerResponse,
@@ -34,6 +35,21 @@ async function send(path: string, init: RequestInit, user: UserId): Promise<Resp
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const method = init.method ?? "GET";
+  const t0 = performance.now();
+  const ms = () => Math.round(performance.now() - t0);
+  try {
+    const out = await requestInner<T>(path, init);
+    dlog("info", "api", `${method} ${path} ok`, { ms: ms(), user: getUserId() });
+    return out;
+  } catch (e) {
+    const err = e as ApiError;
+    dlog("error", "api", `${method} ${path} failed: ${err.message}`, { ms: ms(), status: err.status ?? null, user: getUserId() });
+    throw e;
+  }
+}
+
+async function requestInner<T>(path: string, init: RequestInit = {}): Promise<T> {
   const user = getUserId();
   try {
     await getToken(user);
@@ -114,7 +130,8 @@ export const realApi: HandoverApi = {
       let token: string;
       try {
         token = await getToken();
-      } catch {
+      } catch (e) {
+        dlog("error", "ws", `live login failed: ${String(e)}`);
         onStatus?.(false);
         return retryLater();
       }
@@ -122,15 +139,19 @@ export const realApi: HandoverApi = {
       // Browsers can't set headers on a WebSocket, so the backend reads ?token= for /live.
       ws = new WebSocket(`${wsBase}/live?token=${enc(token)}`);
       ws.onopen = () => {
+        dlog("info", "ws", "live connected");
         retry = 0;
         onStatus?.(true);
       };
       ws.onmessage = (msg) => {
         try {
           onEvent(JSON.parse(msg.data) as LiveEvent);
-        } catch {}
+        } catch (e) {
+          dlog("warn", "ws", "bad live message", { data: String(msg.data).slice(0, 500), error: String(e) });
+        }
       };
       ws.onclose = (ev) => {
+        if (!closed) dlog("warn", "ws", `live closed code=${ev.code} reason=${ev.reason || "-"}`, { retry });
         onStatus?.(false);
         if (ev.code === 4401) clearToken();
         retryLater();
