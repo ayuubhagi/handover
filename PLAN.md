@@ -36,8 +36,8 @@ Demo: a retiring bank operations lead. Product: a governed memory engine for any
 
 ## Team
 - Ayuub: backend, Atlas, memory engine, agent loop
-- Teammate 2: frontend (expert view, successor view, live updates, memory on vs off)
-- Teammate 3: demo script, recorded expert sessions, pitch, 1 minute video, README
+- Harsh: frontend (expert view, successor view, live updates, memory on vs off)
+- Keith: demo script, recorded expert sessions, pitch, 1 minute video, README
 
 ## Must haves
 1. Session 2 asks a contradiction/gap follow-up from session 1
