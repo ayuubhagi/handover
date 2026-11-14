@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useUserId } from "../lib/hooks";
+import { getToken } from "../lib/auth";
 import { loadStoredUser, setUserId } from "../lib/session";
 import { PEOPLE, type UserId } from "../lib/types";
 import { Menu } from "./Menu";
@@ -12,7 +13,7 @@ const DOT: Record<UserId, string> = {
   u_outsider: "bg-soft",
 };
 
-/** Top-right "viewing as" switch. Changes the X-User-Id the app sends. */
+/** Top-right "viewing as" switch. Switching silently logs in as that person (POST /login) so requests carry their token. */
 export function RoleMenu() {
   const user = useUserId();
   useEffect(() => loadStoredUser(), []);
@@ -21,7 +22,10 @@ export function RoleMenu() {
       <Menu
         label="Viewing as"
         value={user}
-        onChange={(v) => setUserId(v as UserId)}
+        onChange={(v) => {
+          setUserId(v as UserId);
+          getToken(v as UserId).catch(() => {});
+        }}
         options={PEOPLE.map((p) => ({
           value: p.id,
           label: p.name,

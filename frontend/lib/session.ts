@@ -1,6 +1,6 @@
 import type { UserId } from "./types";
 
-// The current viewer. Module-level so the API client can read it for the X-User-Id header.
+// The current viewer. Module-level so the API client can log in as this viewer.
 let current: UserId = "u_expert";
 const listeners = new Set<() => void>();
 

@@ -65,7 +65,7 @@ Gap object: `{ "id", "question", "kind", "from_memory_ids", "status": "open | as
 
 ## Status (each person updates their own line)
 - Ayuub (backend): every contract route live against Atlas, 20/20 contract tests pass (real Gemini, Voyage, ElevenLabs, LangSmith, recorded clips). Signed-token auth on every route, audio upload allowlist, JSON errors with CORS. Seeded with Keith's demo content. Run: cd backend, pip install -r requirements.txt, python seed.py, uvicorn main:app --port 8000.
-- Harsh (frontend): Next.js app in /frontend builds clean. Typed client for every contract endpoint + WS /live, mock mode (NEXT_PUBLIC_USE_MOCKS=true, shows a "Mock data" badge). Screens: expert (interview, scope/correct/forget, gaps), successor (ask + live runbook), memory on vs off, audit. Next: wire to real backend.
+- Harsh (frontend): Next.js app in /frontend builds clean. Typed client for every contract endpoint + WS /live, mock mode (NEXT_PUBLIC_USE_MOCKS=true, shows a "Mock data" badge). Screens: expert (interview, scope/correct/forget, gaps), successor (ask + live runbook), memory on vs off, audit. Wired to the real backend with signed-token auth: silent POST /login on role switch (passcodes in frontend/.env.local as NEXT_PUBLIC_DEMO_PASSCODES), Bearer on every request, ?token= for /clips and WS /live, re-login and retry once on 401.
 - Keith (demo): demo content done and merged (demo/DEMO.md, demo/RESEARCH.md, demo/seed_content.py). Dana and Sam audio generated with ElevenLabs. Waiting on Ayuub to swap the seed (see task below), then rehearsal and video.
 
 ## Setup for teammates (every agent: do this before running the backend)

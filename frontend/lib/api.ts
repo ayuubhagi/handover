@@ -1,7 +1,9 @@
 import { API_URL, USE_MOCKS } from "./config";
 import { mockApi } from "./mock";
+import { cachedToken, clearToken, getToken } from "./auth";
 import { getUserId } from "./session";
 import type {
+  UserId,
   AnswerResponse,
   AskResponse,
   AuditEntry,
@@ -24,13 +26,28 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function send(path: string, init: RequestInit, user: UserId): Promise<Response> {
   const headers = new Headers(init.headers);
-  headers.set("X-User-Id", getUserId());
+  headers.set("Authorization", `Bearer ${await getToken(user)}`);
   if (typeof init.body === "string") headers.set("Content-Type", "application/json");
+  return fetch(`${API_URL}${path}`, { ...init, headers });
+}
+
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const user = getUserId();
+  try {
+    await getToken(user);
+  } catch (e) {
+    throw new ApiError(e instanceof Error ? e.message : String(e), 401);
+  }
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, { ...init, headers });
+    res = await send(path, init, user);
+    if (res.status === 401) {
+      // Token expired or the backend restarted with a new secret: log in again and retry once.
+      clearToken(user);
+      res = await send(path, init, user);
+    }
   } catch {
     throw new ApiError(
       `Can't reach the backend at ${API_URL}, or it crashed (an unhandled 500 has no CORS headers, so the browser hides it; check the backend log, e.g. MONGODB_URI not set). Start it, or set NEXT_PUBLIC_USE_MOCKS=true to use demo data.`,
@@ -89,10 +106,21 @@ export const realApi: HandoverApi = {
     let retry = 0;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const wsBase = API_URL.replace(/^http/, "ws");
-    const connect = () => {
+    const retryLater = () => {
+      if (!closed) timer = setTimeout(connect, Math.min(10000, 500 * 2 ** retry++));
+    };
+    const connect = async () => {
       if (closed) return;
-      // Browsers can't set headers on a WebSocket, so the backend accepts ?user_id= for /live.
-      ws = new WebSocket(`${wsBase}/live?user_id=${enc(getUserId())}`);
+      let token: string;
+      try {
+        token = await getToken();
+      } catch {
+        onStatus?.(false);
+        return retryLater();
+      }
+      if (closed) return;
+      // Browsers can't set headers on a WebSocket, so the backend reads ?token= for /live.
+      ws = new WebSocket(`${wsBase}/live?token=${enc(token)}`);
       ws.onopen = () => {
         retry = 0;
         onStatus?.(true);
@@ -102,10 +130,10 @@ export const realApi: HandoverApi = {
           onEvent(JSON.parse(msg.data) as LiveEvent);
         } catch {}
       };
-      ws.onclose = () => {
+      ws.onclose = (ev) => {
         onStatus?.(false);
-        if (closed) return;
-        timer = setTimeout(connect, Math.min(10000, 500 * 2 ** retry++));
+        if (ev.code === 4401) clearToken();
+        retryLater();
       };
       ws.onerror = () => ws?.close();
     };
@@ -120,9 +148,11 @@ export const realApi: HandoverApi = {
   mediaUrl(url) {
     if (!url) return null;
     const abs = /^https?:\/\//.test(url) ? url : `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
-    if (abs.includes("user_id=")) return abs;
-    // <audio> can't send X-User-Id, so pass the viewer as a query param (backend fallback for /clips).
-    return `${abs}${abs.includes("?") ? "&" : "?"}user_id=${enc(getUserId())}`;
+    if (abs.includes("token=")) return abs;
+    // <audio> can't send headers, so the backend reads ?token= for /clips. Data that contains clip
+    // URLs comes from request(), which has already logged in, so the token is cached by now.
+    const token = cachedToken();
+    return token ? `${abs}${abs.includes("?") ? "&" : "?"}token=${enc(token)}` : abs;
   },
 };
 
