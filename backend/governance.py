@@ -273,7 +273,14 @@ def cascade_expired(memory_id: str, pre_image: dict | None = None) -> list[str]:
     """After the TTL index deletes a memory: remove runbook steps built on it, drop its gaps, audit once.
     Safe to call again for the same id (change stream replays)."""
 
+    # Only a real expiry cascades. A delete followed by a re-insert of the same id (a reseed) or a delete of a
+    # memory that had not expired yet is not a TTL expiry, so it must not touch runbook steps or gaps.
+    if pre_image and pre_image.get("expires_at") and pre_image["expires_at"] > utcnow():
+        return []
+
     def txn(s):
+        if db.col(db.MEMORIES).find_one({"_id": memory_id}, {"_id": 1}, session=s):
+            return []
         runbook = db.col(db.RUNBOOK)
         steps = [d["_id"] for d in runbook.find({"derived_from": memory_id, "status": {"$ne": "removed"}},
                                                 {"_id": 1}, session=s)]

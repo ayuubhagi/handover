@@ -8,7 +8,7 @@ from pymongo import MongoClient
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 from pymongo.database import Database
-from pymongo.errors import OperationFailure
+from pymongo.errors import CollectionInvalid, OperationFailure
 from pymongo.operations import SearchIndexModel
 from pymongo.read_concern import ReadConcern
 from pymongo.write_concern import WriteConcern
@@ -84,8 +84,11 @@ def _ensure_collection(name: str, validator: dict) -> None:
     schema = {"$jsonSchema": validator}
     info = next(database.list_collections(filter={"name": name}), None)
     if info is None:
-        database.create_collection(name, validator=schema, validationLevel="strict", validationAction="error")
-        return
+        try:
+            database.create_collection(name, validator=schema, validationLevel="strict", validationAction="error")
+            return
+        except CollectionInvalid:  # another process created it first
+            info = next(database.list_collections(filter={"name": name}), None) or {}
     if info.get("options", {}).get("validator") == schema:
         return
     try:

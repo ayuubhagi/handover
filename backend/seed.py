@@ -119,10 +119,12 @@ def _audio_for(clip_id: str) -> tuple[bytes, str] | tuple[None, str]:
 def seed() -> dict:
     db.ping()
     database = db.get_db()
+    # Drop rather than delete_many: a drop emits no per-document delete events, so a running server's
+    # change stream never mistakes the reset for TTL expiries. ensure_schema recreates validators and indexes.
     existing = set(database.list_collection_names())
     for name in RESET:
         if name in existing:
-            database[name].delete_many({})
+            database.drop_collection(name)
     db.ensure_schema(wait_for_search=False)
 
     db.col(db.PEOPLE).insert_many(PEOPLE)
