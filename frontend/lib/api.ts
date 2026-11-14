@@ -33,7 +33,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     res = await fetch(`${API_URL}${path}`, { ...init, headers });
   } catch {
     throw new ApiError(
-      `Can't reach the backend at ${API_URL}. Start it, or set NEXT_PUBLIC_USE_MOCKS=true to use demo data.`,
+      `Can't reach the backend at ${API_URL}, or it crashed (an unhandled 500 has no CORS headers, so the browser hides it; check the backend log, e.g. MONGODB_URI not set). Start it, or set NEXT_PUBLIC_USE_MOCKS=true to use demo data.`,
       null,
     );
   }
