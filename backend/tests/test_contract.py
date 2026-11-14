@@ -7,14 +7,28 @@
 Tests run in file order and mutate data (correct, forget), so reseed before running again.
 """
 import os
+import sys
+from pathlib import Path
 
 import httpx
 import pytest
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from config import settings  # noqa: E402  (passcodes come from the same .env as the server)
+
 BASE = os.getenv("HANDOVER_BASE_URL", "http://localhost:8000")
-EXPERT = {"X-User-Id": "u_expert"}
-SUCCESSOR = {"X-User-Id": "u_successor"}
-OUTSIDER = {"X-User-Id": "u_outsider"}
+
+
+def login(user_id: str) -> dict:
+    r = httpx.post(f"{BASE}/login", json={"user_id": user_id, "passcode": settings.DEMO_PASSCODES.get(user_id)})
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+TOKENS = {uid: login(uid)["token"] for uid in ("u_expert", "u_successor", "u_outsider")}
+EXPERT = {"Authorization": f"Bearer {TOKENS['u_expert']}"}
+SUCCESSOR = {"Authorization": f"Bearer {TOKENS['u_successor']}"}
+OUTSIDER = {"Authorization": f"Bearer {TOKENS['u_outsider']}"}
 
 MEMORY_KEYS = {"id", "owner_id", "kind", "text", "scope", "status", "version", "supersedes", "derived_from",
                "source_clip_id", "session_id", "created_at", "expires_at"}
@@ -51,9 +65,31 @@ def assert_memory(m: dict):
     assert m["created_at"].endswith("Z") and m["expires_at"].endswith("Z")
 
 
-def test_unknown_user_rejected(api):
-    assert api.get("/memories", headers={"X-User-Id": "u_nobody"}).status_code == 401
+def test_identity_is_token_not_header(api):
     assert api.get("/memories").status_code == 401
+    # Claiming to be the expert in a header is ignored: identity only comes from a signed token.
+    assert api.get("/memories", headers={"X-User-Id": "u_expert"}).status_code == 401
+    assert api.get("/clips/c_1", params={"user_id": "u_expert"}).status_code == 401
+    payload, sig = TOKENS["u_outsider"].split(".")
+    forged = TOKENS["u_expert"].split(".")[0] + "." + sig  # expert claims, outsider signature
+    assert api.get("/memories", headers={"Authorization": f"Bearer {forged}"}).status_code == 401
+    assert api.get("/me", headers=EXPERT).json() == {"id": "u_expert", "name": "Dana", "role": "expert"}
+
+
+def test_login_requires_passcode(api):
+    if not settings.DEMO_PASSCODES:
+        pytest.skip("DEMO_PASSCODES not configured")
+    assert api.post("/login", json={"user_id": "u_expert", "passcode": "000000x"}).status_code == 401
+    assert api.post("/login", json={"user_id": "u_expert"}).status_code == 401
+    assert api.post("/login", json={"user_id": "u_nobody", "passcode": "1"}).status_code == 401
+    body = login("u_successor")
+    assert set(body) == {"token", "expires_at", "user"} and body["user"]["role"] == "successor"
+
+
+def test_errors_are_json_with_cors(api):
+    r = api.get("/memories", headers={"Origin": "http://localhost:3000"})
+    assert r.status_code == 401 and r.json()["detail"]
+    assert r.headers.get("access-control-allow-origin") in ("*", "http://localhost:3000")
 
 
 def test_memories_scoped_per_viewer(api):
@@ -182,8 +218,20 @@ def test_clip_access(api):
     assert api.get("/clips/c_3", headers=SUCCESSOR).status_code == 403  # only backs a never_transfer memory
     r = api.get("/clips/c_1", headers=SUCCESSOR)
     assert r.status_code == 200 and r.headers["content-type"].startswith("audio/") and len(r.content) > 10_000
-    assert api.get("/clips/c_1", params={"user_id": "u_successor"}).status_code == 200  # <audio src> fallback
+    assert r.headers["x-content-type-options"] == "nosniff"
+    assert api.get("/clips/c_1", params={"token": TOKENS["u_successor"]}).status_code == 200  # <audio src> fallback
+    assert api.get("/clips/c_3", params={"token": TOKENS["u_successor"]}).status_code == 403
     assert api.get("/clips/c_missing", headers=EXPERT).status_code == 404
+
+
+def test_upload_rejects_non_audio(api):
+    sid = api.post("/sessions", json={"expert_id": "u_expert", "memory": False}, headers=EXPERT).json()["session_id"]
+    r = api.post(f"/sessions/{sid}/answer", headers=EXPERT,
+                 files={"audio": ("x.html", b"<script>alert(1)</script>", "text/html")})
+    assert r.status_code == 415, r.text
+    r = api.post(f"/sessions/{sid}/answer", headers=EXPERT,
+                 files={"audio": ("x.svg", b"<svg onload=alert(1)>", "image/svg+xml")})
+    assert r.status_code == 415
 
 
 def test_interview_session_asks_about_seeded_gap(api):
@@ -230,7 +278,7 @@ def test_live_websocket_pushes_changes(api):
     from websockets.sync.client import connect
     import json
 
-    url = BASE.replace("http", "ws", 1) + "/live?user_id=u_expert"
+    url = BASE.replace("http", "ws", 1) + "/live?token=" + TOKENS["u_expert"]
     with connect(url) as ws:
         api.patch("/memories/m_3/scope", json={"scope": "successor"}, headers=EXPERT)
         seen = set()
@@ -247,3 +295,14 @@ def test_live_websocket_pushes_changes(api):
                 break
         assert "memory_changed" in seen
     api.patch("/memories/m_3/scope", json={"scope": "team"}, headers=EXPERT)
+
+
+def test_live_websocket_requires_token():
+    from websockets.exceptions import ConnectionClosed
+    from websockets.sync.client import connect
+
+    with connect(BASE.replace("http", "ws", 1) + "/live?token=nope") as ws:
+        assert ws.recv(timeout=10).startswith('{"type":"error"')
+        with pytest.raises(ConnectionClosed) as closed:
+            ws.recv(timeout=10)
+        assert closed.value.rcvd.code == 4401

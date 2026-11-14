@@ -1,28 +1,60 @@
 """Every route in the TEAM.md API contract."""
 from fastapi import APIRouter, Depends, File, Form, Header, Query, Response, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi.concurrency import run_in_threadpool
+from pydantic import BaseModel
 
 import access
 import audit
+import auth
 import clips
 import db
 import governance
 import interview
 import retrieval
 import voice
-from errors import BadRequest, Forbidden, NotFound
+from config import settings
+from errors import BadRequest, Forbidden, NotFound, PayloadTooLarge, Unauthorized, UnsupportedMedia
 from live import hub
 from models import AskBody, CorrectBody, ScopeBody, SessionCreate
 
 router = APIRouter()
 
+# Uploads are served back to browsers later, so only real audio types are stored.
+AUDIO_TYPES = {
+    "audio/webm", "audio/ogg", "audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/wave",
+    "audio/mp4", "audio/x-m4a", "audio/m4a", "audio/aac", "audio/flac", "audio/x-flac",
+}
 
-def viewer(x_user_id: str | None = Header(default=None)) -> dict:
-    return access.require_person(x_user_id)
+
+def viewer(authorization: str | None = Header(default=None)) -> dict:
+    return auth.person_from_token(auth.bearer(authorization))
 
 
-def viewer_or_query(x_user_id: str | None = Header(default=None), user_id: str | None = Query(default=None)) -> dict:
-    # <audio src> cannot send headers, so the clip route also takes ?user_id=
-    return access.require_person(x_user_id or user_id)
+def viewer_or_query(authorization: str | None = Header(default=None), token: str | None = Query(default=None)) -> dict:
+    # <audio src> cannot send headers, so the clip route also takes ?token=
+    return auth.person_from_token(auth.bearer(authorization) or token)
+
+
+class LoginBody(BaseModel):
+    user_id: str
+    passcode: str | None = None
+
+
+@router.post("/login")
+def login(body: LoginBody):
+    return auth.login(body.user_id, body.passcode)
+
+
+@router.get("/me")
+def me_route(me: dict = Depends(viewer)):
+    return {"id": me["_id"], "name": me["name"], "role": me["role"]}
+
+
+def _audio_type(upload: UploadFile) -> str:
+    ctype = (upload.content_type or "").split(";")[0].strip().lower()
+    if ctype not in AUDIO_TYPES:
+        raise UnsupportedMedia(f"Unsupported audio type '{ctype or 'unknown'}'")
+    return ctype
 
 
 # interview --------------------------------------------------------------------
@@ -47,8 +79,10 @@ def answer(session_id: str, audio: UploadFile | None = File(default=None),
     if session["expert_id"] != me["_id"]:
         raise Forbidden("Only the expert can answer in their interview")
 
-    data = audio.file.read() if audio is not None else b""
-    content_type = (audio.content_type if audio is not None else None) or "audio/webm"
+    data = audio.file.read(settings.MAX_AUDIO_BYTES + 1) if audio is not None else b""
+    if len(data) > settings.MAX_AUDIO_BYTES:
+        raise PayloadTooLarge("Audio is larger than the upload limit")
+    content_type = _audio_type(audio) if data else "audio/webm"
     if not data and not (transcript or "").strip():
         raise BadRequest("Send an audio file (or a transcript form field)")
 
@@ -125,18 +159,30 @@ def get_clip(clip_id: str, me: dict = Depends(viewer_or_query)):
     if stored is None:
         raise NotFound("No audio stored for this clip")
     data, content_type = stored
-    return Response(content=data, media_type=content_type)
+    if content_type not in AUDIO_TYPES:
+        content_type = "application/octet-stream"
+    # nosniff: the browser must treat the bytes as the declared audio type, never as HTML or script.
+    return Response(content=data, media_type=content_type, headers={
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "default-src 'none'; sandbox",
+        "Cache-Control": "private, max-age=300",
+    })
 
 
 # live -------------------------------------------------------------------------
 @router.websocket("/live")
 async def live(ws: WebSocket):
     await ws.accept()
-    user_id = ws.headers.get("x-user-id") or ws.query_params.get("user_id")
+    token = auth.bearer(ws.headers.get("authorization")) or ws.query_params.get("token")
     try:
-        person = access.get_person(user_id)
+        person = await run_in_threadpool(auth.person_from_token, token)
+    except Unauthorized as exc:
+        await ws.send_json({"type": "error", "detail": exc.detail})
+        await ws.close(code=4401, reason="unauthorized")
+        return
     except Exception:
-        person = None
+        await ws.close(code=1011, reason="server error")
+        return
     await hub.connect(ws, person)
     try:
         while True:

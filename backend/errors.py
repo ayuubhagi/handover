@@ -23,3 +23,15 @@ class Forbidden(HandoverError):
 
 class NotFound(HandoverError):
     status_code = 404
+
+
+class PayloadTooLarge(HandoverError):
+    status_code = 413
+
+
+class UnsupportedMedia(HandoverError):
+    status_code = 415
+
+
+class ServiceUnavailable(HandoverError):
+    status_code = 503

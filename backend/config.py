@@ -24,6 +24,9 @@ class Settings:
 
     GOOGLE_API_KEY = _get("GOOGLE_API_KEY")
     GEMINI_MODEL = _get("GEMINI_MODEL", "gemini-3.5-flash")
+    GEMINI_FALLBACK_MODELS = [m.strip() for m in _get(
+        "GEMINI_FALLBACK_MODELS", "gemini-3.8-flash,gemini-3.6-flash,gemini-3.5-flash-lite"
+    ).split(",") if m.strip()]
 
     ELEVENLABS_API_KEY = _get("ELEVENLABS_API_KEY")
     ELEVENLABS_VOICE_ID = _get("ELEVENLABS_VOICE_ID", "JBFqnCBsd6RMkjVDRZzb")
@@ -33,6 +36,14 @@ class Settings:
     PUBLIC_BASE_URL = _get("PUBLIC_BASE_URL", "http://localhost:8000").rstrip("/")
     MEMORY_TTL_DAYS = int(_get("MEMORY_TTL_DAYS", "365"))
     CORS_ORIGINS = [o.strip() for o in _get("CORS_ORIGINS", "*").split(",") if o.strip()]
+
+    # Auth: HMAC secret for tokens, and "u_expert:code,u_successor:code,..." passcodes for /login.
+    AUTH_SECRET = _get("AUTH_SECRET")
+    TOKEN_TTL_SECONDS = int(_get("TOKEN_TTL_SECONDS", str(12 * 3600)))
+    DEMO_PASSCODES = dict(
+        pair.split(":", 1) for pair in _get("DEMO_PASSCODES").split(",") if ":" in pair
+    )
+    MAX_AUDIO_BYTES = int(_get("MAX_AUDIO_BYTES", str(25 * 1024 * 1024)))
 
 
 settings = Settings()
