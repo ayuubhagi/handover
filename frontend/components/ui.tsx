@@ -67,7 +67,9 @@ export function MemoryMeta({ m }: { m: Memory }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted">
       <Tag>{m.kind}</Tag>
-      <Tag tone={m.scope}>{m.scope}</Tag>
+      <span title={audienceTip(m.scope)}>
+        <Tag tone={m.scope}>{audienceLabel(m.scope)}</Tag>
+      </span>
       <span>v{m.version}</span>
       <span className="font-mono">{m.id}</span>
       <span>expires {new Date(m.expires_at).toLocaleDateString()}</span>
@@ -75,12 +77,30 @@ export function MemoryMeta({ m }: { m: Memory }) {
   );
 }
 
-/** Plain-language audience names for the simple side. */
-export const AUDIENCE: { value: MemoryScope; label: string }[] = [
-  { value: "successor", label: "Sam" },
-  { value: "team", label: "Team" },
-  { value: "never_transfer", label: "Only me" },
+/** Plain-language access levels. Banks run on need-to-know and segregation of duties. */
+export const AUDIENCE: { value: MemoryScope; label: string; tip: string }[] = [
+  {
+    value: "never_transfer",
+    label: "🔒 Senior only",
+    tip: "Client-confidential. Privacy and bank confidentiality rules say nobody else gets it, not even the successor.",
+  },
+  {
+    value: "successor",
+    label: "🟠 Successor",
+    tip: "Authority and override knowledge, like moving money around a control. Only the person accountable for the role gets it.",
+  },
+  {
+    value: "team",
+    label: "🟢 Everyone on the team",
+    tip: "General know-how. Safe, and it helps the intern learn.",
+  },
 ];
+export const audienceTip = (s: MemoryScope) => AUDIENCE.find((a) => a.value === s)?.tip;
+
+/** Plain-language line for answers where some matches were withheld by role. */
+export function withheldText(n: number): string {
+  return `${n} ${n === 1 ? "memory is" : "memories are"} restricted for your role, so ${n === 1 ? "it was" : "they were"} withheld. This was logged.`;
+}
 export const audienceLabel = (s: MemoryScope) => AUDIENCE.find((a) => a.value === s)?.label ?? s;
 
 /** Plays an API audio URL; falls back to reading the text aloud when there is no recording. */

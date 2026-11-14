@@ -10,8 +10,8 @@ const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const serif = Source_Serif_4({ variable: "--font-serif-display", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Handover",
-  description: "Talk through what you know. Whoever takes over can ask it.",
+  title: "Handover · Northgate Bank",
+  description: "Hand over how you run the bank's money. Whoever takes your desk can ask it.",
 };
 
 // Apply the stored (or system) theme before first paint.

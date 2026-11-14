@@ -19,7 +19,7 @@ export default function KnowsPage() {
   return (
     <div className="h-full overflow-y-auto px-4 pb-16 pt-14 md:pt-10">
       <div className="mx-auto max-w-5xl">
-        <h1 className="font-serif text-3xl tracking-tight sm:text-4xl">Handed over</h1>
+        <h1 className="font-serif text-3xl tracking-tight sm:text-4xl">Desk ledger</h1>
         <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           <div>
             {mems.error && <ErrorNote message={mems.error} onRetry={mems.reload} />}
@@ -91,6 +91,7 @@ function Item({ m, canEdit, onDone }: { m: Memory; canEdit: boolean; onDone: () 
                   key={a.value}
                   role="radio"
                   aria-checked={m.scope === a.value}
+                  title={a.tip}
                   disabled={busy}
                   onClick={() => m.scope !== a.value && run(() => api.setScope(m.id, a.value as MemoryScope))}
                   className={`rounded-full px-2.5 py-1 font-medium transition ${m.scope === a.value ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"}`}

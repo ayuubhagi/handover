@@ -103,10 +103,10 @@ export function Composer({
               type="button"
               onClick={onCall}
               disabled={disabled}
-              aria-label="Call"
-              className="grid h-8 w-8 place-items-center rounded-full text-muted transition hover:bg-accent-soft hover:text-accent-ink disabled:opacity-40"
+              className="flex h-8 items-center gap-1.5 rounded-full bg-accent px-3.5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-40"
             >
-              <IconPhone />
+              <IconPhone className="h-4 w-4" />
+              Call
             </button>
           )}
           {!recording && (

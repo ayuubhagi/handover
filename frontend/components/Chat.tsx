@@ -10,8 +10,9 @@ import { Composer } from "./Composer";
 import { IconLock } from "./icons";
 import { Logo } from "./Logo";
 import { chats, uid, useChats, type Conversation, type Message } from "./store";
-import { Button, ErrorNote, PlayButton } from "./ui";
+import { Button, ErrorNote, PlayButton, withheldText } from "./ui";
 import type { Mode } from "./store";
+import type { AskResponse } from "../lib/types";
 
 /** Ask Gemini (server route) for a short title; keeps the fallback if it fails. */
 async function nameConversation(id: string, text: string) {
@@ -99,9 +100,9 @@ export function Chat() {
     }
   }
 
-  async function ask(q: string) {
+  async function ask(q: string): Promise<AskResponse | null> {
     setError(null);
-    let id = active?.id;
+    let id = chats.get().conversations.find((c) => c.id === chats.get().activeId && c.mode === "ask")?.id;
     if (!id) {
       id = chats.create({ mode: "ask", user, title: fallbackTitle(q), sessionId: null, messages: [] });
       nameConversation(id, q);
@@ -111,8 +112,10 @@ export function Chat() {
     try {
       const r = await api.ask(q, true);
       push(id, { id: uid(), role: "answer", answer: r, question: q });
+      return r;
     } catch (e) {
       setError(errorMessage(e));
+      return null;
     } finally {
       setBusy(null);
     }
@@ -122,13 +125,10 @@ export function Chat() {
   const empty = !active || active.messages.length === 0;
 
   if (calling) {
-    return (
-      <CallScreen
-        conversation={active}
-        start={startInterview}
-        answer={answer}
-        onEnd={() => setCalling(false)}
-      />
+    return mode === "ask" ? (
+      <CallScreen kind="ask" ask={ask} onEnd={() => setCalling(false)} />
+    ) : (
+      <CallScreen kind="interview" conversation={active} start={startInterview} answer={answer} onEnd={() => setCalling(false)} />
     );
   }
 
@@ -144,12 +144,13 @@ export function Chat() {
         placeholder="Ask anything"
         disabled={!!busy}
         onSend={ask}
+        onCall={() => setCalling(true)}
         autoFocus
       />
     ) : (
       <Composer
         {...shared}
-        placeholder={empty ? "Tell it what you know" : "Your answer"}
+        placeholder={empty ? "Tell it how you run the desk" : "Your answer"}
         disabled={!!busy || notExpert}
         onSend={async (t) => {
           const conv = active?.sessionId ? active : await startInterview(t);
@@ -171,11 +172,11 @@ export function Chat() {
       <div className="relative flex h-full flex-col items-center justify-center px-4">
         <div className="relative w-full max-w-2xl">
           <h1 className="text-balance text-center font-serif text-4xl tracking-tight sm:text-5xl">
-            {mode === "interview" ? "What do you know?" : "What do you need?"}
+            {mode === "interview" ? "What should the next banker know?" : "What do you need to know?"}
           </h1>
           <div className="mt-8">
             {errors}
-            {notExpert ? <ExpertOnly /> : composer}
+            {notExpert ? <ExpertOnly onAsk={() => switchMode("ask")} /> : composer}
           </div>
         </div>
       </div>
@@ -205,22 +206,25 @@ export function Chat() {
       </div>
       <div className="px-4 pb-5">
         {errors}
-        <div className="mx-auto w-full max-w-2xl">{notExpert ? <ExpertOnly /> : composer}</div>
+        <div className="mx-auto w-full max-w-2xl">{notExpert ? <ExpertOnly onAsk={() => switchMode("ask")} /> : composer}</div>
       </div>
     </div>
   );
 }
 
-function ExpertOnly() {
+function ExpertOnly({ onAsk }: { onAsk: () => void }) {
   return (
     <div className="glass flex flex-col items-center gap-3 rounded-2xl border border-line px-4 py-5 text-center text-sm text-muted">
       <span className="sticker-icon">
         <MochiHeartSticker size={44} />
       </span>
-      <p>Only the person handing over can record.</p>
-      <Button variant="ghost" onClick={() => setUserId("u_expert")}>
-        Switch to Handing over
-      </Button>
+      <p>Only Dana (senior payments officer, retiring) records the handover. You can ask what she handed over.</p>
+      <div className="flex flex-wrap justify-center gap-2">
+        <Button onClick={onAsk}>Ask instead</Button>
+        <Button variant="ghost" onClick={() => setUserId("u_expert")}>
+          Switch to Dana
+        </Button>
+      </div>
     </div>
   );
 }
@@ -274,7 +278,7 @@ function Bubble({ m }: { m: Message }) {
           {r.blocked_count > 0 && (
             <p className="flex items-center gap-1.5 text-sm text-soft">
               <IconLock className="h-3.5 w-3.5" />
-              Some notes are private.
+              {withheldText(r.blocked_count)}
             </p>
           )}
         </div>

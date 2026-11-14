@@ -1,14 +1,14 @@
 "use client";
 
 import type { AskResponse } from "../lib/types";
-import { MemoryMeta, PlayButton } from "./ui";
+import { MemoryMeta, PlayButton, withheldText } from "./ui";
 
 export function AnswerView({ r }: { r: AskResponse }) {
   return (
     <div className="space-y-4">
       {r.blocked_count > 0 && (
         <div role="status" className="rounded-lg border border-danger/25 bg-danger-soft px-4 py-3 text-sm text-danger">
-          {r.blocked_count} {r.blocked_count === 1 ? "memory matched" : "memories matched"} but {r.blocked_count === 1 ? "is" : "are"} outside your scope, so {r.blocked_count === 1 ? "it was" : "they were"} withheld. This was logged.
+          {withheldText(r.blocked_count)}
         </div>
       )}
       <p className="font-serif text-lg leading-relaxed">{r.answer_text}</p>

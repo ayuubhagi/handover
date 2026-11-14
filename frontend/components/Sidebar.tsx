@@ -61,7 +61,7 @@ export function Sidebar() {
         <div className="flex items-center justify-between px-4 pb-3 pt-4">
           <Link href="/" onClick={() => goChat(() => chats.newChat())} className="flex items-center gap-2.5 text-[15px] font-semibold tracking-tight">
             <Logo />
-            Handover
+            <span className="flex flex-col leading-tight">Handover<span className="text-[11px] font-normal text-soft">Northgate Bank</span></span>
           </Link>
           <button onClick={() => setOpen(false)} aria-label="Close menu" className="rounded-md p-1 text-muted hover:bg-hover md:hidden">
             <IconX />
@@ -119,7 +119,7 @@ export function Sidebar() {
         </nav>
 
         <div className="space-y-px border-t border-line px-3 pt-2">
-          {navItem("/knows", "Handed over", <FoldedPaperSticker size={24} />)}
+          {navItem("/knows", "Desk ledger", <FoldedPaperSticker size={24} />)}
           {navItem("/under-the-hood", "Under the hood", <KuroLaptopSticker size={24} />)}
         </div>
 

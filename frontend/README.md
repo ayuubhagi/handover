@@ -26,7 +26,7 @@ Restart `npm run dev` after changing env vars.
 - `app/compare` memory on vs off
 - `app/audit` audit log
 
-The viewer (Dana / Sam / Riley) is picked in the header and sent as `X-User-Id`. Audio and the WebSocket send it as `?user_id=` because browsers can't set headers there.
+The viewer (Dana · Senior, Sam · Junior, Jordan · Intern) is picked in the header; switching silently calls `POST /login` and every request sends `Authorization: Bearer <token>`. Audio and the WebSocket send `?token=` because browsers can't set headers there.
 
 ## Checks
 

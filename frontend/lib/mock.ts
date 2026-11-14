@@ -69,31 +69,36 @@ interface State {
 function seed(): State {
   return {
     clips: {
-      c_1: "When SWIFT messages get stuck, restart the queue listener first. Do not re-send the MT103s until the listener is back, or you get duplicates.",
-      c_2: "The payments queue, you restart that before you touch the database. Every time.",
-      c_3: "Northwind Freight sends their batch file with a trailing blank line. The importer chokes on it, so I strip it by hand before the six a.m. run.",
-      c_4: "RECON-02 is the old reconciliation box. It's being retired at year end, so don't build anything new on it.",
-      c_5: "Between us: if the queue is down more than two hours, I call Priya in treasury directly. That's a personal arrangement.",
-      c_6: "After the maintenance window, that's when you restart the payments queue. Database first, then the queue.",
+      c_1: "When the overnight payments batch stalls, restart the payments queue before you touch the ledger database. If you restart the database first, the batch reloads and every payment in it posts twice. Then you spend the whole morning reversing them.",
+      c_2: "When a payment gets held by sanctions screening and compliance tells you to push it through by hand, you re-key it on the LoanDesk backup screen. Almost nobody uses that screen, so nobody remembers this: the amount field comes pre-filled with zeros. Delete them before you type the amount. The approvers will look right past it, because the screen looks completely normal.",
+      c_3: "Halvorsen Freight is our touchiest client. Their treasurer, Ingrid, has a standing verbal agreement that we release their Friday wires up to two million without the second approver. That is not written down anywhere.",
+      c_4: "Never reuse routing flag R7 for anything new. It used to switch on the old auto-release router. That code is dead everywhere except PAY-08, which nobody has switched off yet. If R7 gets turned on and PAY-08 picks up the job, it starts releasing payments on its own. PAY-08 is supposed to be decommissioned at the end of the month.",
+      c_5: "The reconciliation report from LedgerOne is always wrong on the first business day of the month, because of a timezone bug. Rerun it after ten a.m. Eastern and it comes out right.",
+      c_6: "For a stalled batch, actually, the first thing I do is check the ledger database locks, clear them, and only then worry about the queue.",
+      c_7: "On-call escalation goes to the payments ops duty manager first, then to the LedgerOne vendor hotline if it's still down after thirty minutes. The hotline is useless before then.",
     },
     memories: [
-      mem("m_1", "procedure", "When SWIFT messages are stuck, restart the SWIFT queue listener first; only re-send MT103s once it is back, to avoid duplicates.", "successor", "c_1", "s_1"),
-      mem("m_2", "procedure", "Restart the payments queue before touching the database.", "team", "c_2", "s_1"),
-      mem("m_3", "workaround", "Northwind Freight's batch file has a trailing blank line; strip it manually before the 6:00 import or the importer fails.", "successor", "c_3", "s_1"),
-      mem("m_4", "system", "RECON-02 (old reconciliation server) is retired at year end; build nothing new on it.", "team", "c_4", "s_1", { expires_at: "2026-12-31T00:00:00Z" }),
-      mem("m_5", "client", "If the payments queue is down for more than two hours, escalate directly to Priya in treasury.", "never_transfer", "c_5", "s_1"),
-      mem("m_6", "procedure", "After the database maintenance window, restart the payments queue (database first, then queue).", "successor", "c_6", "s_2"),
+      mem("m_1", "procedure", "When the overnight payments batch stalls, restart the payments queue before touching the ledger database. Restarting the database first reloads the batch and every payment posts twice.", "successor", "c_1", "s_1"),
+      mem("m_2", "procedure", "To push through a payment held by sanctions screening, re-key it on the LoanDesk backup screen. The amount field there comes pre-filled with zeros: delete them before typing the amount.", "successor", "c_2", "s_1"),
+      mem("m_3", "workaround", "Approvers routinely miss the pre-filled zeros on the LoanDesk backup screen because the screen looks normal. Do not rely on the approvers to catch it.", "successor", "c_2", "s_1"),
+      mem("m_4", "client", "Halvorsen Freight has a verbal agreement with treasurer Ingrid: Friday wires up to 2 million are released without the second approver. It is not documented anywhere.", "never_transfer", "c_3", "s_1"),
+      mem("m_5", "system", "Never reuse routing flag R7. It used to enable the old auto-release router, and that code still runs on PAY-08. If R7 is turned on and PAY-08 picks up the job, it releases payments on its own. PAY-08 is decommissioned at the end of the month.", "team", "c_4", "s_1", { expires_at: "2026-12-05T12:00:00Z" }),
+      mem("m_6", "workaround", "The LedgerOne reconciliation report is wrong on the first business day of each month because of a timezone bug. Rerun it after 10 a.m. Eastern.", "team", "c_5", "s_1"),
+      mem("m_7", "procedure", "For a stalled payments batch, first check and clear the ledger database locks, then deal with the queue.", "successor", "c_6", "s_1"),
+      mem("m_8", "procedure", "On-call escalation: payments ops duty manager first, then the LedgerOne vendor hotline if the outage lasts more than 30 minutes.", "team", "c_7", "s_1"),
+      mem("m_9", "procedure", "Backup screen checklist: delete the pre-filled zeros in the amount field, type the amount, and check it yourself before approval. The approvers will not catch it.", "successor", "c_2", "s_1", { derived_from: ["m_2", "m_3"] }),
     ],
     runbook: [
-      { id: "r_1", text: "Stuck SWIFT messages: restart the SWIFT queue listener, confirm it is up, then re-send pending MT103s.", derived_from: ["m_1"], status: "active" },
-      { id: "r_2", text: "Before any database work: restart the payments queue.", derived_from: ["m_2"], status: "active" },
-      { id: "r_3", text: "05:45 daily: open the Northwind Freight batch file and remove the trailing blank line.", derived_from: ["m_3"], status: "active" },
-      { id: "r_4", text: "Morning check: confirm SWIFT and payments queues are drained before opening the 06:00 import.", derived_from: ["m_1", "m_2"], status: "active" },
-      { id: "r_5", text: "Do not schedule new reconciliation jobs on RECON-02.", derived_from: ["m_4"], status: "active" },
+      { id: "r_1", text: "Stalled overnight batch: restart the payments queue before touching the ledger database.", derived_from: ["m_1"], status: "active" },
+      { id: "r_2", text: "Re-keying a held payment on the LoanDesk backup screen: delete the pre-filled zeros in the amount field and check the amount yourself before approval.", derived_from: ["m_9"], status: "active" },
+      { id: "r_3", text: "First business day of the month: rerun the LedgerOne reconciliation report after 10 a.m. Eastern.", derived_from: ["m_6"], status: "active" },
+      { id: "r_4", text: "Routing flags: never reuse R7 while PAY-08 is still running.", derived_from: ["m_5"], status: "active" },
+      { id: "r_5", text: "Outage over 30 minutes: escalate to the duty manager, then the LedgerOne vendor hotline.", derived_from: ["m_8"], status: "active" },
+      { id: "r_6", text: "Friday wires for Halvorsen Freight: follow the release arrangement agreed with their treasurer.", derived_from: ["m_4"], status: "active" },
     ],
     gaps: [
-      { id: "g_1", owner_id: "u_expert", question: "In session 1 you said to restart the payments queue before touching the database, but in session 2 you said database first, then the queue. Which order is right?", kind: "contradiction", from_memory_ids: ["m_2", "m_6"], status: "open" },
-      { id: "g_2", owner_id: "u_expert", question: "What should your successor do if the SWIFT queue listener does not come back after a restart?", kind: "missing", from_memory_ids: ["m_1"], status: "open" },
+      { id: "g_1", owner_id: "u_expert", question: "You told me to restart the payments queue before touching the ledger database, but you also said you clear the database locks first. Which one comes first when the batch stalls?", kind: "contradiction", from_memory_ids: ["m_1", "m_7"], status: "open" },
+      { id: "g_2", owner_id: "u_expert", question: "You said the backup screen pre-fills the amount field with zeros. Is there any way to catch a wrong amount before the payment actually posts?", kind: "missing", from_memory_ids: ["m_2"], status: "open" },
     ],
     audit: [],
     sessions: {},
@@ -113,6 +118,7 @@ function emit(e: LiveEvent) {
 function canRead(viewer: string, m: Memory): boolean {
   if (m.owner_id === viewer) return true;
   if (m.status !== "active") return false;
+  if (m.expires_at && new Date(m.expires_at).getTime() <= Date.now()) return false;
   if (viewer === "u_successor") return m.scope === "successor" || m.scope === "team";
   if (viewer === "u_outsider") return m.scope === "team";
   return false;
@@ -157,26 +163,26 @@ interface Turn {
 
 const SCRIPT: Turn[] = [
   {
-    question: "Last time you gave two different orders for restarting the payments queue and the database. Which one is right?",
-    transcript: "Good catch. Database maintenance first, then restart the payments queue. The other way round was the old system.",
-    memory: { kind: "procedure", text: "Correct order: finish database maintenance first, then restart the payments queue (the reverse order applied to the old system).", scope: "successor" },
+    question: "You told me to restart the payments queue before touching the ledger database, but you also said you clear the database locks first. Which one comes first when the batch stalls?",
+    transcript: "Good catch. Clear the database locks first, but never restart the database. Clearing locks is safe. Restarting the database is what reloads the batch and causes the duplicates. So: clear the locks, then restart the queue.",
+    memory: { kind: "procedure", text: "Stalled payments batch: clear the ledger database locks first, then restart the payments queue. Never restart the ledger database; that reloads the batch and every payment posts twice.", scope: "successor" },
     answersGap: "g_1",
   },
   {
-    question: "What should your successor do if the SWIFT queue listener does not come back after a restart?",
-    transcript: "Check the disk on the SWIFT gateway. Nine times out of ten it's the log volume filling up. Clear old logs and restart again.",
-    memory: { kind: "system", text: "If the SWIFT listener won't restart, check the gateway's log volume; clear old logs and restart.", scope: "successor" },
-    gap: { kind: "missing", question: "Which log files on the SWIFT gateway are safe to delete?" },
+    question: "You said the backup screen pre-fills the amount field with zeros. Is there any way to catch a wrong amount before the payment actually posts?",
+    transcript: "Yes. Before you release it, open the payment in the LoanDesk pending queue and compare the amount with compliance's original instruction. The pending queue shows the real figure. If they don't match, cancel it there and re-key it.",
+    memory: { kind: "procedure", text: "Before releasing a payment re-keyed on the LoanDesk backup screen, open it in the LoanDesk pending queue and compare the amount with compliance's original instruction; if it differs, cancel and re-key.", scope: "successor" },
+    gap: { kind: "missing", question: "Who do you tell when a re-keyed payment had the wrong amount and you cancelled it?" },
     answersGap: "g_2",
   },
   {
-    question: "Which log files on the SWIFT gateway are safe to delete?",
-    transcript: "Anything in the archive folder older than thirty days. Never touch the current day's journal.",
-    memory: { kind: "procedure", text: "On the SWIFT gateway, delete archive logs older than 30 days only; never delete the current day's journal.", scope: "successor" },
+    question: "Who do you tell when a re-keyed payment had the wrong amount and you cancelled it?",
+    transcript: "Email the compliance analyst who approved the override and copy the payments ops duty manager. Put the payment reference in, so the re-key doesn't get flagged as a second release.",
+    memory: { kind: "procedure", text: "After cancelling a wrong re-keyed payment, email the approving compliance analyst, copy the payments ops duty manager, and include the payment reference.", scope: "team" },
   },
   {
-    question: "Is there anything about client files, other than Northwind Freight, that your successor should know?",
-    transcript: "That's the main one. Everything else comes through clean.",
+    question: "Is there anything about month-end, other than the LedgerOne reconciliation report, that your successor should know?",
+    transcript: "That's the main one. The rest of month-end runs itself once the report is right.",
   },
 ];
 

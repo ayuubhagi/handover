@@ -4,7 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { errorMessage } from "../lib/api";
 
 /** MediaRecorder wrapper: start() asks for the mic, stop() resolves with the recorded blob. Exposes a live level 0..1. */
-export function useRecorder() {
+/** Hands-free end-of-turn: after speech is heard, this much quiet ends the turn. */
+const SPEECH_LEVEL = 0.12;
+const SILENCE_LEVEL = 0.06;
+const SILENCE_MS = 1400;
+const MAX_TURN_MS = 120_000;
+
+export function useRecorder(opts?: { onSilence?: () => void }) {
+  const onSilence = useRef(opts?.onSilence);
+  useEffect(() => {
+    onSilence.current = opts?.onSilence;
+  });
   const [recording, setRecording] = useState(false);
   const [level, setLevel] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -47,11 +57,28 @@ export function useRecorder() {
         ac.createMediaStreamSource(stream).connect(an);
         ctx.current = ac;
         const buf = new Uint8Array(an.frequencyBinCount);
+        const began = performance.now();
+        let heard = false;
+        let quietSince = 0;
+        let fired = false;
         const tick = () => {
           an.getByteTimeDomainData(buf);
           let sum = 0;
           for (const v of buf) sum += ((v - 128) / 128) ** 2;
-          setLevel(Math.min(1, Math.sqrt(sum / buf.length) * 4));
+          const lvl = Math.min(1, Math.sqrt(sum / buf.length) * 4);
+          setLevel(lvl);
+          const now = performance.now();
+          const live = stream.getAudioTracks().some((t) => t.enabled);
+          if (live && lvl > SPEECH_LEVEL) {
+            heard = true;
+            quietSince = 0;
+          } else if (heard && lvl < SILENCE_LEVEL) {
+            quietSince ||= now;
+          }
+          if (!fired && ((heard && quietSince && now - quietSince > SILENCE_MS) || now - began > MAX_TURN_MS)) {
+            fired = true;
+            onSilence.current?.();
+          }
           raf.current = requestAnimationFrame(tick);
         };
         tick();

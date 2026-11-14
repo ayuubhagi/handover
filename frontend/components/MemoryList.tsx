@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { api, errorMessage } from "../lib/api";
 import type { Memory, MemoryScope } from "../lib/types";
-import { Button, Card, ErrorNote, Loading, MemoryMeta } from "./ui";
+import { AUDIENCE, Button, Card, ErrorNote, Loading, MemoryMeta } from "./ui";
 
 type Notice = { id: string; tone: "ok" | "warn"; text: string };
 
@@ -36,7 +36,7 @@ export function MemoryList({
         </label>
       }
     >
-      {!canEdit && <p className="mb-3 text-xs text-muted">Only the person handing over can change these. Switch roles (top right) to edit.</p>}
+      {!canEdit && <p className="mb-3 text-xs text-muted">Only Dana (senior payments officer) can change these. Switch roles (top right) to edit.</p>}
       {notices.map((n) => (
         <div key={n.id} className={`mb-3 rounded-md px-3 py-2 text-sm ${n.tone === "warn" ? "bg-danger-soft text-danger" : "bg-accent-soft text-accent"}`}>
           {n.text}
@@ -130,9 +130,9 @@ function MemoryRow({ m, canEdit, onDone, note }: { m: Memory; canEdit: boolean; 
               onChange={(e) => changeScope(e.target.value as MemoryScope)}
               className="rounded-md border border-line bg-surface px-2 py-1 text-xs"
             >
-              <option value="successor">successor</option>
-              <option value="team">team</option>
-              <option value="never_transfer">never transfer</option>
+              {AUDIENCE.map((a) => (
+                <option key={a.value} value={a.value} title={a.tip}>{a.label}</option>
+              ))}
             </select>
             <button onClick={() => setEditing(true)} className="text-xs font-medium text-accent hover:underline">Correct</button>
             {confirmForget ? (

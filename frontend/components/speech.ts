@@ -34,7 +34,7 @@ export function speak(url: string | null, text: string, onStart?: (stop: () => v
   });
 }
 
-type Rec = { start(): void; stop(): void; abort(): void; onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null; onend: (() => void) | null; onerror: (() => void) | null; interimResults: boolean; lang: string };
+type Rec = { start(): void; stop(): void; abort(): void; onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null; onend: (() => void) | null; onerror: (() => void) | null; interimResults: boolean; continuous: boolean; lang: string };
 
 /** Browser dictation (Web Speech API), used for spoken questions in Ask mode. Null when unsupported. */
 export function dictation(): Rec | null {

@@ -111,9 +111,9 @@ export interface HandoverApi {
 }
 
 export const PEOPLE: { id: UserId; name: string; role: string }[] = [
-  { id: "u_expert", name: "Handing over", role: "Recording what you know" },
-  { id: "u_successor", name: "Taking over", role: "Asking what was handed over" },
-  { id: "u_outsider", name: "Other team", role: "Sees only what is shared with the team" },
+  { id: "u_expert", name: "Dana · Senior payments officer, retiring", role: "Hands over what she knows. Sees everything she recorded." },
+  { id: "u_successor", name: "Sam · Payments analyst, taking over", role: "Inherits Dana's role: successor and team knowledge." },
+  { id: "u_outsider", name: "Jordan · Operations intern", role: "New to the bank: general team know-how only." },
 ];
 
 export function personName(id: string): string {
