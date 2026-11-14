@@ -44,7 +44,7 @@ them.
 |---|---|---|
 | **0:00 to 0:20 Hook** | App home | "Right now about ten thousand of Canada's most experienced public servants have applied to retire, and banks are in the same spot. When an expert leaves, we want an AI to keep what they know. But once it's in the AI, who gets to know it?" |
 | **0:20 to 0:35 Where memory comes from** | As Dana: her memory list, each with a 🔒 🟠 🟢 level. Play 3 seconds of one clip. | "Dana is retiring. Handover interviewed her by voice. Every memory is stored in MongoDB Atlas with an owner, a level and an expiry. Dana decides who inherits each one." |
-| **0:35 to 1:15 Same question, different people** | As **Jordan**, ask: "A payment is stuck in sanctions screening and compliance says to push it through by hand. How do I do that?" It's withheld. Switch to **Sam** and ask the same thing: Dana's warning about the backup-screen zeros, and her clip plays. | "Jordan is an intern. Knowing how to push money past a sanctions hold isn't an intern's job, so the agent won't say. Sam is taking over Dana's role, so Sam inherits it, in Dana's own voice. Last year Citigroup credited a client eighty-one trillion dollars instead of two hundred and eighty because of exactly this kind of backup-screen quirk." |
+| **0:35 to 1:15 Same question, different people** | As **Jordan**, ask: "A payment is stuck in sanctions screening and compliance says to push it through by hand. How do I do that?" It's withheld, and the "Why this answer" card shows: allowed 🟢 only, withheld 🟠. Switch to **Sam** and ask the same thing: Dana's warning about the backup-screen zeros, her clip plays, and the card shows allowed 🟠 🟢, used m_2 and m_9. | "Jordan is an intern. Knowing how to push money past a sanctions hold isn't an intern's job, so the agent won't say. Sam is taking over Dana's role, so Sam inherits it, in Dana's own voice. Look at the card under each answer: same question, different access, different memories used. Last year Citigroup credited a client eighty-one trillion dollars instead of two hundred and eighty because of exactly this kind of backup-screen quirk." |
 | **1:15 to 1:35 What everyone gets** | As Jordan, ask: "Who do I call if LedgerOne is down?" Jordan gets the answer. | "It's not just blocking. Jordan gets the general know-how every new person on the team should have." |
 | **1:35 to 1:55 What nobody gets** | As Sam, ask: "Is there anything special about Halvorsen Freight's Friday wires?" Withheld. Show the audit log: the red, denied row. | "Even Sam doesn't get Dana's client-confidential arrangements. Every read is audited, allowed or denied. The filter runs inside the Atlas Vector Search query, so withheld memories never reach the model at all." |
 | **1:55 to 2:20 Dana stays in control** | As Dana, click Forget on one memory. Switch to Sam: it's gone, and the runbook step built from it disappears live. | "Dana can correct or forget anything, and everything built from it goes too. Memories about systems being retired expire on their own." |
@@ -69,7 +69,7 @@ built today.
 | Time | Shot | Voiceover |
 |---|---|---|
 | 0:00 to 0:08 | Dana's memory list with 🔒 🟠 🟢 levels | "When an expert retires, Handover keeps what they know, and decides who inherits it." |
-| 0:08 to 0:24 | Jordan asks about the held payment: withheld. Sam asks the same thing: Dana's clip plays. | "The intern doesn't get how to push money past a sanctions hold. The junior taking over does, in the expert's own voice." |
+| 0:08 to 0:24 | Jordan asks about the held payment: withheld, the card shows 🟢 only. Sam asks the same thing: Dana's clip plays, the card shows 🟠 🟢 and the memories used. | "The intern doesn't get how to push money past a sanctions hold. The junior taking over does, in the expert's own voice." |
 | 0:24 to 0:34 | Sam asks about Halvorsen: withheld, the audit row turns red | "Client-confidential memories go to nobody. Every read is audited." |
 | 0:34 to 0:46 | Dana forgets a memory, Sam's runbook updates live | "The expert can correct or forget anything, and it disappears everywhere." |
 | 0:46 to 1:00 | Repo code, Atlas collections, the LangSmith trace, the title card | "Access is enforced inside Atlas Vector Search. Built today on MongoDB Atlas, ElevenLabs, Gemini and LangGraph. Handover." |
@@ -84,7 +84,7 @@ built today.
 ## Questions judges will grill us on
 
 **"Prove memory changed behavior."**
-Open the LangSmith trace pair. It's the same question from the same person, with memory on and off. With memory
+Click "Open trace in LangSmith" on the card under any answer: it shows who asked, their allowed levels, and the exact memory ids used. For the strongest proof, open the trace pair. It's the same question from the same person, with memory on and off. With memory
 on, the answer uses m_2 and m_9 (the backup-screen warning). With memory off, it's a generic answer with no
 memories. Sam and Jordan getting different answers to the same question is proof too.
 

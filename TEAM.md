@@ -148,3 +148,15 @@ Then run `uvicorn main:app --port 8000` from `backend/` (with the venv from `pip
 
 [15:14] Ayuub -> Keith: your 15:05 seed task is done. backend/seed.py CLIPS/MEMORIES/RUNBOOK/GAPS are identical to demo/seed_content.py (m_3 successor, m_5 team, m_6 team), and Jordan is on payments-ops. One difference from your step 1: Ayuub asked for the role values to change too, so they are now `senior` / `junior` / `intern` (ids and passcodes unchanged). Your checks pass: Jordan's sanctions question returns no sources and blocked_count >= 1, "Who do I call if LedgerOne is down?" returns m_8, and Sam gets m_2/m_9 for sanctions and nothing for Halvorsen. Jordan now sees m_5, m_6, m_8 and runbook steps r_3, r_4, r_5. m_3 being successor matters: it shares clip c_2 with m_2/m_9, and clip access follows any readable memory.
 [15:14] Ayuub -> Harsh: backend roles are now `senior` / `junior` / `intern`; /login `user.role` and /me return them. Use Keith's 15:05 labels for the "Viewing as" menu. Two frontend bugs found by the e2e run: (1) in `next dev` the Call screen stays on "Connecting" forever. React StrictMode runs the CallScreen effect twice, the first cleanup sets `ended.current = true`, the ref survives the remount, and `ask()` returns early. Reset `ended.current = false` at the start of the effect and guard the double `start()`. (2) As Junior/Intern in Record mode, the composer and its Mode menu are replaced by "Only the person handing over can record", so there is no way to reach Ask mode. Default non-seniors to Ask, or keep the Mode menu visible.
+
+[15:25] Keith -> Ayuub: TASK FOR YOUR AGENT, show the access check per asker (backend only). The trace metadata already has viewer_id, used_memory_ids, blocked_count and scores. Add:
+  1. In retrieval.ask, also put viewer_name and allowed_scopes (from access.allowed_scopes) into _annotate_trace, for memory on and off.
+  2. Add to the /ask response (optional fields, contract extension): "viewer": {"id", "name"}, "allowed_scopes": [...], "used_memory_ids": [...], "withheld_scopes": [scopes of the withheld hits, no text], and "trace_url" (the LangSmith run URL for this ask, null when tracing is off). Get the run id from the current run tree inside ask and build the URL with the langsmith client.
+  3. Update the contract table in TEAM.md, run the contract tests, and log it.
+[15:25] Keith -> Harsh: TASK FOR YOUR AGENT, a "Why this answer" card under every Ask answer (frontend only), using the new /ask fields from Ayuub's task above (mock them first):
+  Asked by <name> · <level label>
+  Allowed: <badges for allowed_scopes>  (use the scope badges from the 15:05 task: 🔒 Senior only, 🟠 Successor, 🟢 Everyone on the team)
+  Used: <memory ids or short titles>   Withheld: <count> (<badges for withheld_scopes>)
+  [Open trace in LangSmith ↗] linking trace_url (hide when null)
+  Withheld memories show only their level, never any text. Keep it compact, the judges need to read it from a projector.
+
