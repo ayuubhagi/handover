@@ -101,7 +101,7 @@ function MemoryRow({ m, canEdit, onDone, note }: { m: Memory; canEdit: boolean; 
     <li className={`rounded-lg border border-line p-4 ${inactive ? "opacity-60" : ""}`}>
       {editing ? (
         <div className="space-y-2">
-          <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} className="w-full rounded-md border border-line p-2 text-sm focus:outline-2 focus:outline-accent" />
+          <textarea aria-label="Corrected memory text" value={text} onChange={(e) => setText(e.target.value)} rows={3} className="w-full rounded-md border border-line p-2 text-sm focus:outline-2 focus:outline-accent" />
           <div className="flex gap-2">
             <Button onClick={correct} disabled={busy || !text.trim() || text.trim() === m.text}>
               Save as v{m.version + 1}

@@ -45,7 +45,7 @@ export default function ComparePage() {
         }}
         className="mb-6 flex gap-2"
       >
-        <input value={q} onChange={(e) => setQ(e.target.value)} className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:outline-2 focus:outline-accent" />
+        <input aria-label="Question" value={q} onChange={(e) => setQ(e.target.value)} className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm focus:outline-2 focus:outline-accent" />
         <Button type="submit" disabled={busy || !q.trim()}>Compare</Button>
       </form>
       <div className="grid gap-6 md:grid-cols-2">

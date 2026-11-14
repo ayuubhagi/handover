@@ -304,6 +304,8 @@ export const mockApi: HandoverApi = {
         removed.push(s.id);
       }
     }
+    // Same as the backend: gaps that quote a forgotten memory are deleted.
+    db.gaps = db.gaps.filter((g) => !g.from_memory_ids.some((m) => forgotten.has(m)));
     const audit_id = logAudit({ actor_id: getUserId(), action: "forget", memory_ids: [...forgotten], allowed: true, reason: `forgotten by owner; ${removed.length} runbook step(s) removed` });
     for (const m of db.memories) if (forgotten.has(m.id)) emit({ type: "memory_changed", memory: m });
     emit({ type: "runbook_changed" });

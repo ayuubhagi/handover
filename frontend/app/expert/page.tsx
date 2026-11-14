@@ -52,7 +52,7 @@ export default function ExpertPage() {
             </ul>
           </Card>
         </div>
-        <MemoryList memories={memories.data} loading={memories.loading} error={memories.error} reload={memories.reload} canEdit={user === "u_expert"} />
+        <MemoryList memories={memories.data} loading={memories.loading} error={memories.error} reload={refresh} canEdit={user === "u_expert"} />
       </div>
     </div>
   );
