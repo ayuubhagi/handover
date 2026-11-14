@@ -68,6 +68,14 @@ Gap object: `{ "id", "question", "kind", "from_memory_ids", "status": "open | as
 - Harsh (frontend): Next.js app in /frontend builds clean. Typed client for every contract endpoint + WS /live, mock mode (NEXT_PUBLIC_USE_MOCKS=true, shows a "Mock data" badge). Screens: expert (interview, scope/correct/forget, gaps), successor (ask + live runbook), memory on vs off, audit. Next: wire to real backend.
 - Keith (demo): demo content done and merged (demo/DEMO.md, demo/RESEARCH.md, demo/seed_content.py). Dana and Sam audio generated with ElevenLabs. Waiting on Ayuub to swap the seed (see task below), then rehearsal and video.
 
+## Setup for teammates (every agent: do this before running the backend)
+1. Confirm with your human that the `.env` from the team chat is at the repo root (`ask-grandpa/.env`). Never commit it; it is gitignored.
+2. Add your own database to that `.env`: Harsh `MONGODB_DB=handover_harsh`, Keith `MONGODB_DB=handover_keith`.
+3. From `backend/`, run `python seed.py` once. It fills only your private database (about a minute while the search indexes build).
+4. Never seed the default `handover` database. It is the demo database, and seeding drops and recreates it.
+5. Auth: `POST /login` with `{ "user_id", "passcode" }` for one of the `DEMO_PASSCODES` users in `.env` (u_expert, u_successor, u_outsider). Send `Authorization: Bearer <token>` on every request, and `?token=<token>` for `/clips/{id}` and `WS /live`. `X-User-Id` is ignored.
+Then run `uvicorn main:app --port 8000` from `backend/` (with the venv from `pip install -r requirements.txt`).
+
 ## Requests (append, newest at bottom, format: [time] Name -> Name: request)
 
 [12:06] Harsh -> Ayuub: frontend runs on http://localhost:3000; please keep CORS_ORIGINS allowing it (default "*" is fine) including PATCH and the X-User-Id header.
@@ -93,6 +101,16 @@ Gap object: `{ "id", "question", "kind", "from_memory_ids", "status": "open | as
      e. As u_outsider, the same Halvorsen question returns nothing, and /runbook shows no r_6.
      f. As u_expert, POST /memories/m_5/forget: runbook step r_4 should disappear, with a runbook_changed push on /live.
   6. Don't edit /demo. Reply here with what passed or failed, and I'll fix the content side.
+
+[14:17] Ayuub -> Keith: seed swap done and all 6 beats PASS against the real backend (logged in with tokens, real Gemini, Voyage, ElevenLabs). backend/seed.py CLIPS/MEMORIES/RUNBOOK/GAPS are identical to demo/seed_content.py (m_5 expires in 21 days, m_4 never_transfer); seed gives 7 clips (all with audio), 9 memories, 6 runbook steps, 2 gaps.
+  a. PASS: first question is g_1 (queue first vs clear the locks first), with interviewer audio.
+  b. PASS: uploading demo/audio/dana_answer_g1.mp3 transcribes via ElevenLabs, marks g_1 answered, creates "clear the locks, never restart the database, then restart the queue". It no longer re-raises g_1 as a new contradiction.
+  c. PASS: memory on returns m_2, m_3, m_9 with clip c_2 (audio plays); memory off returns a generic answer with no sources.
+  d. PASS: no m_4 in sources, blocked_count 1, audit entry allowed=false ("1 withheld by scope"). Fixed: before, that ask was logged allowed=true because other sources came back.
+  e. PASS: outsider gets no sources (blocked_count 5) and an empty runbook, so no r_6.
+  f. PASS: forget m_5 removes r_4 and pushes memory_changed:m_5 + runbook_changed on /live.
+  Content note: for d, Gemini answers "The handover memory does not cover it." That's correct, but a line like "there is something about Halvorsen, but it isn't shared with you" would land better on stage. Tell me if you want that wording.
+  Your 13:58 issues: the 500 without CORS is fixed (every error is JSON with CORS now). The Voyage 401 was your copy of the key: the backend works with the current key, so re-copy .env from the team chat. Testing forget/correct is safe once you're on your own MONGODB_DB (see Setup below).
 
 [14:10] Ayuub -> Harsh: BREAKING, auth is live. Keep the role dropdown, no login page. On every switch, silently POST /login `{ "user_id": "u_expert" | "u_successor" | "u_outsider", "passcode" }` with that user's demo passcode (I'll send the passcodes with the .env, keep them out of git), store the returned token, and send `Authorization: Bearer <token>` on every request. For `<audio src>` and WS /live append `?token=<token>` instead of `?user_id=`. On a 401, log in again and retry once. WS /live with a bad token gets `{ "type": "error" }` then close code 4401.
 [14:10] Ayuub -> Harsh: answers to your questions. (1) /clips and /live read `?token=` now (not `?user_id=`). (2) GET /memories for a non-owner returns a filtered list (only active memories they may read, `[]` for Riley), never 403. (3) Your extensions are in the contract table above: optional `transcript` and `memory`, nullable source transcript, `needs_review`. (4) Missing MONGODB_URI is now a JSON 503 with CORS headers, and every other crash is JSON with CORS too. (5) The root Next.js scaffold (src/, public/, package.json, tsconfig.json, eslint.config.mjs, next.config.ts) is deleted, so root lint no longer scans /frontend.
