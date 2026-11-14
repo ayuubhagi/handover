@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { getUserId, onUserChange } from "../lib/session";
 import type { AskResponse, Gap, Memory, UserId } from "../lib/types";
 
 // Client-side app state: conversations (kept in this browser only) and the theme.
@@ -34,6 +35,14 @@ let state: State = { conversations: [], activeId: null, mode: "interview" };
 let loaded = false;
 const listeners = new Set<() => void>();
 
+// Switching viewer must never leave another viewer's chat open.
+let watching = false;
+function watchUser() {
+  if (watching || typeof window === "undefined") return;
+  watching = true;
+  onUserChange(() => commit({ ...state, activeId: null }));
+}
+
 function load() {
   if (loaded || typeof window === "undefined") return;
   loaded = true;
@@ -53,6 +62,7 @@ function commit(next: State) {
 
 const subscribe = (fn: () => void) => {
   load();
+  watchUser();
   listeners.add(fn);
   return () => {
     listeners.delete(fn);
@@ -60,14 +70,25 @@ const subscribe = (fn: () => void) => {
 };
 const EMPTY: State = { conversations: [], activeId: null, mode: "interview" };
 
+// Conversations live in this browser; each viewer only sees their own.
+let view: { src: State; user: UserId; out: State } | null = null;
+function ownView(): State {
+  const user = getUserId();
+  if (view && view.src === state && view.user === user) return view.out;
+  const conversations = state.conversations.filter((c) => c.user === user);
+  const activeId = conversations.some((c) => c.id === state.activeId) ? state.activeId : null;
+  view = { src: state, user, out: { ...state, conversations, activeId } };
+  return view.out;
+}
+
 export function useChats(): State {
-  return useSyncExternalStore(subscribe, () => state, () => EMPTY);
+  return useSyncExternalStore(subscribe, ownView, () => EMPTY);
 }
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
 export const chats = {
-  get: () => state,
+  get: ownView,
   setMode(mode: Mode) {
     commit({ ...state, mode, activeId: null });
   },
@@ -76,6 +97,7 @@ export const chats = {
   },
   open(id: string) {
     const c = state.conversations.find((x) => x.id === id);
+    if (!c || c.user !== getUserId()) return;
     commit({ ...state, activeId: id, mode: c?.mode ?? state.mode });
   },
   create(c: Omit<Conversation, "id" | "updatedAt">): string {

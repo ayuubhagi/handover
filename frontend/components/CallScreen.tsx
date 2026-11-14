@@ -62,6 +62,7 @@ export function CallScreen(props: Props) {
   const stopSpeech = useRef<(() => void) | null>(null);
   const recog = useRef<ReturnType<typeof dictation>>(null);
   const said = useRef("");
+  const mutedRef = useRef(false);
   const recRef = useRef(rec);
   const propsRef = useRef(props);
   useEffect(() => {
@@ -94,6 +95,7 @@ export function CallScreen(props: Props) {
       }
       r.continuous = true;
       r.onresult = (e) => {
+        if (mutedRef.current) return;
         let t = "";
         for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
         said.current = t;
@@ -191,6 +193,7 @@ export function CallScreen(props: Props) {
   }, []);
 
   function toggleMute() {
+    mutedRef.current = !muted;
     rec.mute(!muted);
     setMuted(!muted);
   }

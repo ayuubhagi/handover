@@ -23,6 +23,7 @@ export function useRecorder(opts?: { onSilence?: () => void }) {
   const resolver = useRef<((b: Blob | null) => void) | null>(null);
   const raf = useRef<number>(0);
   const ctx = useRef<AudioContext | null>(null);
+  const muted = useRef(false);
 
   function cleanup() {
     cancelAnimationFrame(raf.current);
@@ -39,6 +40,8 @@ export function useRecorder(opts?: { onSilence?: () => void }) {
     setError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Each turn opens a fresh stream; keep it silent if the caller is muted.
+      stream.getAudioTracks().forEach((t) => (t.enabled = !muted.current));
       const r = new MediaRecorder(stream);
       chunks.current = [];
       r.ondataavailable = (e) => {
@@ -112,6 +115,7 @@ export function useRecorder(opts?: { onSilence?: () => void }) {
   }
 
   function mute(on: boolean) {
+    muted.current = on;
     rec.current?.stream.getAudioTracks().forEach((t) => (t.enabled = !on));
   }
 
