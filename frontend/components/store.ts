@@ -10,7 +10,7 @@ export type Mode = "interview" | "ask";
 export type Message =
   | { id: string; role: "interviewer"; text: string; audio: string | null }
   | { id: string; role: "you"; text: string; saved?: Memory[] }
-  | { id: string; role: "grandpa"; answer: AskResponse; question: string }
+  | { id: string; role: "answer"; answer: AskResponse; question: string }
   | { id: string; role: "note"; text: string; gaps?: Gap[] };
 
 export interface Conversation {
@@ -29,8 +29,8 @@ interface State {
   mode: Mode;
 }
 
-const KEY = "handover_chats_v1";
-let state: State = { conversations: [], activeId: null, mode: "ask" };
+const KEY = "handover_chats_v2";
+let state: State = { conversations: [], activeId: null, mode: "interview" };
 let loaded = false;
 const listeners = new Set<() => void>();
 
@@ -58,7 +58,7 @@ const subscribe = (fn: () => void) => {
     listeners.delete(fn);
   };
 };
-const EMPTY: State = { conversations: [], activeId: null, mode: "ask" };
+const EMPTY: State = { conversations: [], activeId: null, mode: "interview" };
 
 export function useChats(): State {
   return useSyncExternalStore(subscribe, () => state, () => EMPTY);

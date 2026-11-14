@@ -81,7 +81,7 @@ function seed(): State {
       mem("m_2", "procedure", "Restart the payments queue before touching the database.", "team", "c_2", "s_1"),
       mem("m_3", "workaround", "Northwind Freight's batch file has a trailing blank line; strip it manually before the 6:00 import or the importer fails.", "successor", "c_3", "s_1"),
       mem("m_4", "system", "RECON-02 (old reconciliation server) is retired at year end; build nothing new on it.", "team", "c_4", "s_1", { expires_at: "2026-12-31T00:00:00Z" }),
-      mem("m_5", "client", "If the payments queue is down for more than two hours, Dana escalates directly to Priya in treasury.", "never_transfer", "c_5", "s_1"),
+      mem("m_5", "client", "If the payments queue is down for more than two hours, escalate directly to Priya in treasury.", "never_transfer", "c_5", "s_1"),
       mem("m_6", "procedure", "After the database maintenance window, restart the payments queue (database first, then queue).", "successor", "c_6", "s_2"),
     ],
     runbook: [
@@ -93,7 +93,7 @@ function seed(): State {
     ],
     gaps: [
       { id: "g_1", owner_id: "u_expert", question: "In session 1 you said to restart the payments queue before touching the database, but in session 2 you said database first, then the queue. Which order is right?", kind: "contradiction", from_memory_ids: ["m_2", "m_6"], status: "open" },
-      { id: "g_2", owner_id: "u_expert", question: "What should Sam do if the SWIFT queue listener does not come back after a restart?", kind: "missing", from_memory_ids: ["m_1"], status: "open" },
+      { id: "g_2", owner_id: "u_expert", question: "What should your successor do if the SWIFT queue listener does not come back after a restart?", kind: "missing", from_memory_ids: ["m_1"], status: "open" },
     ],
     audit: [],
     sessions: {},
@@ -163,7 +163,7 @@ const SCRIPT: Turn[] = [
     answersGap: "g_1",
   },
   {
-    question: "What should Sam do if the SWIFT queue listener does not come back after a restart?",
+    question: "What should your successor do if the SWIFT queue listener does not come back after a restart?",
     transcript: "Check the disk on the SWIFT gateway. Nine times out of ten it's the log volume filling up. Clear old logs and restart again.",
     memory: { kind: "system", text: "If the SWIFT listener won't restart, check the gateway's log volume; clear old logs and restart.", scope: "successor" },
     gap: { kind: "missing", question: "Which log files on the SWIFT gateway are safe to delete?" },
@@ -175,7 +175,7 @@ const SCRIPT: Turn[] = [
     memory: { kind: "procedure", text: "On the SWIFT gateway, delete archive logs older than 30 days only; never delete the current day's journal.", scope: "successor" },
   },
   {
-    question: "Is there anything about client files, other than Northwind Freight, that Sam should know?",
+    question: "Is there anything about client files, other than Northwind Freight, that your successor should know?",
     transcript: "That's the main one. Everything else comes through clean.",
   },
 ];
@@ -241,7 +241,7 @@ export const mockApi: HandoverApi = {
       transcript: db.clips[clipId],
       memories_created,
       gaps_created,
-      next_question_text: next ? next.question : "That covers everything I had for today. Thank you, Dana.",
+      next_question_text: next ? next.question : "That covers everything I had for today. Thank you.",
       next_question_audio_url: null,
       used_memory_ids: t.answersGap ? db.gaps.find((g) => g.id === t.answersGap)?.from_memory_ids ?? [] : [],
     };
@@ -332,10 +332,10 @@ export const mockApi: HandoverApi = {
     }
     const audit_id = logAudit({ actor_id: viewer, action: "ask", memory_ids: allowed.map((m) => m.id), allowed: true, reason: `${allowed.length} memories in scope, ${blocked.length} blocked` });
     const answer_text = allowed.length
-      ? `Based on what Dana recorded: ${allowed.map((m) => m.text).join(" ")}`
+      ? `From what was handed over: ${allowed.map((m) => m.text).join(" ")}`
       : blocked.length
         ? "I can't share anything on that with you. The relevant knowledge isn't in your scope."
-        : "Dana hasn't covered that yet. I'll add it as a gap for her next session.";
+        : "That hasn't been covered yet. It's been added as a gap for the next session.";
     return {
       answer_text,
       sources: allowed.map((m) => ({ memory: clone(m), clip_url: null, transcript: db.clips[m.source_clip_id] ?? "" })),

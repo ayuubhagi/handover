@@ -28,7 +28,7 @@ export function MemoryList({
 
   return (
     <Card
-      title="Dana's memories"
+      title="Memories"
       aside={
         <label className="flex items-center gap-2 text-xs text-muted">
           <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
@@ -36,7 +36,7 @@ export function MemoryList({
         </label>
       }
     >
-      {!canEdit && <p className="mb-3 text-xs text-muted">Only Dana can change these. Switch to Dana to govern them.</p>}
+      {!canEdit && <p className="mb-3 text-xs text-muted">Only the person handing over can change these. Switch roles (top right) to edit.</p>}
       {notices.map((n) => (
         <div key={n.id} className={`mb-3 rounded-md px-3 py-2 text-sm ${n.tone === "warn" ? "bg-danger-soft text-danger" : "bg-accent-soft text-accent"}`}>
           {n.text}

@@ -14,7 +14,7 @@ export function AnswerView({ r }: { r: AskResponse }) {
       <p className="font-serif text-lg leading-relaxed">{r.answer_text}</p>
       {r.sources.length > 0 && (
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">In Dana’s words</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">In their own words</p>
           <ul className="space-y-3">
             {r.sources.map((s) => (
               <li key={s.memory.id} className="rounded-lg border border-line p-3">

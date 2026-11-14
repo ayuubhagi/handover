@@ -2,34 +2,18 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { USE_MOCKS } from "../lib/config";
-import { useUserId } from "../lib/hooks";
 import { resetMock } from "../lib/mock";
-import { loadStoredUser, setUserId } from "../lib/session";
-import { PEOPLE, type UserId } from "../lib/types";
 import { IconBook, IconGear, IconMenu, IconMoon, IconPlus, IconSun, IconX } from "./icons";
-import { chats, setTheme, useChats, useTheme, type Mode } from "./store";
-
-const MODES: { value: Mode; label: string; hint: string }[] = [
-  { value: "interview", label: "Interview", hint: "Dana shares what she knows" },
-  { value: "ask", label: "Ask", hint: "Ask what Dana knows" },
-];
-
-const ROLE: Record<UserId, string> = {
-  u_expert: "The expert",
-  u_successor: "The successor",
-  u_outsider: "Another team",
-};
+import { chats, setTheme, useChats, useTheme } from "./store";
 
 export function Sidebar() {
-  const user = useUserId();
   const theme = useTheme();
-  const { conversations, activeId, mode } = useChats();
+  const { conversations, activeId } = useChats();
   const path = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  useEffect(() => loadStoredUser(), []);
 
   const goChat = (fn: () => void) => {
     fn();
@@ -59,7 +43,7 @@ export function Sidebar() {
       </button>
       {open && <div className="fixed inset-0 z-30 bg-black/30 md:hidden" onClick={() => setOpen(false)} />}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col border-r border-line bg-sidebar transition-transform md:static md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col border-r border-line bg-sidebar/70 backdrop-blur-xl transition-transform md:static md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex items-center justify-between px-4 pb-2 pt-4">
           <Link href="/" onClick={() => setOpen(false)} className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
@@ -81,23 +65,6 @@ export function Sidebar() {
           </button>
         </div>
 
-        <div className="px-3 pt-4">
-          <div role="tablist" aria-label="Mode" className="grid grid-cols-2 gap-1 rounded-lg bg-hover p-1">
-            {MODES.map((m) => (
-              <button
-                key={m.value}
-                role="tab"
-                aria-selected={mode === m.value}
-                onClick={() => goChat(() => chats.setMode(m.value))}
-                className={`rounded-md py-1.5 text-sm font-medium transition ${mode === m.value ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"}`}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-          <p className="px-1 pt-1.5 text-xs text-soft">{MODES.find((m) => m.value === mode)?.hint}</p>
-        </div>
-
         <nav className="min-h-0 flex-1 overflow-y-auto px-3 pt-4">
           <p className="px-2.5 pb-1 text-xs font-medium text-soft">Conversations</p>
           {conversations.length === 0 && <p className="px-2.5 py-1 text-sm text-soft">Nothing yet.</p>}
@@ -108,7 +75,7 @@ export function Sidebar() {
                   onClick={() => goChat(() => chats.open(c.id))}
                   className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm transition ${activeId === c.id && path === "/" ? "bg-active text-ink" : "text-muted hover:bg-hover hover:text-ink"}`}
                 >
-                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${c.mode === "interview" ? "bg-accent" : "bg-line-strong"}`} />
+                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${c.mode === "interview" ? "bg-accent" : "bg-[#78d6d2]"}`} />
                   <span className="truncate">{c.title}</span>
                 </button>
               </li>
@@ -117,27 +84,12 @@ export function Sidebar() {
         </nav>
 
         <div className="space-y-0.5 px-3 pt-2">
-          {navItem("/knows", "What Grandpa knows", <IconBook />)}
+          {navItem("/knows", "Handed over", <IconBook />)}
           {navItem("/under-the-hood", "Under the hood", <IconGear />)}
         </div>
 
         <div className="mt-2 border-t border-line px-3 py-3">
-          <label htmlFor="viewer" className="px-1 text-xs font-medium text-soft">
-            You are
-          </label>
-          <select
-            id="viewer"
-            value={user}
-            onChange={(e) => setUserId(e.target.value as UserId)}
-            className="mt-1 w-full rounded-lg border border-line bg-surface px-2.5 py-2 text-sm"
-          >
-            {PEOPLE.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}, {ROLE[p.id].toLowerCase()}
-              </option>
-            ))}
-          </select>
-          <div className="mt-3 flex items-center justify-between px-1">
+          <div className="flex items-center justify-between px-1">
             {USE_MOCKS ? (
               <span className="flex items-center gap-1.5 text-xs text-soft">
                 <span className="h-1.5 w-1.5 rounded-full bg-warn" />

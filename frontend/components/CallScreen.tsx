@@ -7,12 +7,13 @@ import { IconMic, IconMicOff, IconPhoneOff } from "./icons";
 import { speak } from "./speech";
 import { chats, type Conversation } from "./store";
 import { useRecorder } from "./useRecorder";
+import { MochiHeadphonesSticker } from "stick-it-up";
 
 type Phase = "connecting" | "speaking" | "listening" | "thinking" | "error";
 
 const LABEL: Record<Phase, string> = {
   connecting: "Connecting",
-  speaking: "Grandpa is asking",
+  speaking: "Handover is asking",
   listening: "Your turn. Take your time.",
   thinking: "Saving what you said",
   error: "Something went wrong",
@@ -99,9 +100,8 @@ export function CallScreen({
 
   return (
     <div className="relative flex h-full flex-col items-center justify-between overflow-hidden px-6 py-10">
-      <div className="atmosphere" />
       <div className="relative text-center">
-        <p className="text-sm font-medium">Interview call</p>
+        <p className="text-sm font-medium">Recording call</p>
         <p className="mt-0.5 font-mono text-xs text-soft">{time}</p>
       </div>
 
@@ -118,14 +118,14 @@ export function CallScreen({
             className={`orb grid h-32 w-32 place-items-center rounded-full bg-accent shadow-[0_0_80px_var(--glow-a)] transition-transform ${listening ? "" : ""}`}
             style={listening ? { transform: `scale(${1 + rec.level * 0.25})`, animation: "none" } : undefined}
           >
-            {listening ? <Bars level={muted ? 0 : rec.level} count={9} className="h-10" /> : <span className="font-serif text-4xl text-on-accent">g</span>}
+            {listening ? <Bars level={muted ? 0 : rec.level} count={9} className="h-10" /> : <MochiHeadphonesSticker size={78} />}
           </div>
         </div>
         <p className="mt-8 text-sm font-medium text-accent-ink" aria-live="polite">
           {muted && listening ? "Muted" : LABEL[phase]}
         </p>
         <p className="mt-3 min-h-[3.5rem] font-serif text-2xl leading-snug">{question}</p>
-        {(rec.error || phase === "error") && <p className="mt-3 text-sm text-danger">{rec.error ?? "Couldn’t reach Grandpa. End the call and try again."}</p>}
+        {(rec.error || phase === "error") && <p className="mt-3 text-sm text-danger">{rec.error ?? "Couldn’t connect. End the call and try again."}</p>}
         {saved.length > 0 && (
           <div className="mt-6 flex flex-col items-center gap-1.5">
             {saved.map((s) => (

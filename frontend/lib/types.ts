@@ -111,9 +111,9 @@ export interface HandoverApi {
 }
 
 export const PEOPLE: { id: UserId; name: string; role: string }[] = [
-  { id: "u_expert", name: "Dana", role: "Retiring ops lead" },
-  { id: "u_successor", name: "Sam", role: "Successor" },
-  { id: "u_outsider", name: "Riley", role: "Another team" },
+  { id: "u_expert", name: "Handing over", role: "Recording what you know" },
+  { id: "u_successor", name: "Taking over", role: "Asking what was handed over" },
+  { id: "u_outsider", name: "Other team", role: "Sees only what is shared with the team" },
 ];
 
 export function personName(id: string): string {

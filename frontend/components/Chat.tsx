@@ -4,13 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { api, errorMessage } from "../lib/api";
 import { useUserId } from "../lib/hooks";
 import { setUserId } from "../lib/session";
-import { personName } from "../lib/types";
+import { NoriHeadphonesSticker, PipDetectiveSticker } from "stick-it-up";
 import { CallScreen } from "./CallScreen";
 import { Composer } from "./Composer";
-import { IconLock, IconPhone } from "./icons";
+import { IconLock } from "./icons";
 import { dictation } from "./speech";
 import { chats, uid, useChats, type Conversation, type Message } from "./store";
 import { Button, ErrorNote, PlayButton } from "./ui";
+import type { Mode } from "./store";
 import { useRecorder } from "./useRecorder";
 
 const SUGGESTIONS = [
@@ -19,10 +20,6 @@ const SUGGESTIONS = [
   "Anything odd about the Northwind Freight file?",
 ];
 
-function greeting() {
-  const h = new Date().getHours();
-  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
-}
 
 export function Chat() {
   const user = useUserId();
@@ -103,7 +100,7 @@ export function Chat() {
     setBusy("Thinking");
     try {
       const r = await api.ask(q, true);
-      push(id, { id: uid(), role: "grandpa", answer: r, question: q });
+      push(id, { id: uid(), role: "answer", answer: r, question: q });
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -143,7 +140,7 @@ export function Chat() {
     if (blob && active) answer(active, blob);
   }
 
-  const notDana = mode === "interview" && user !== "u_expert";
+  const notExpert = mode === "interview" && user !== "u_expert";
   const empty = !active || active.messages.length === 0;
 
   if (calling) {
@@ -157,10 +154,16 @@ export function Chat() {
     );
   }
 
+  const switchMode = (m: Mode) => {
+    if (m !== mode) chats.setMode(m);
+  };
+  const shared = { mode, onMode: switchMode, onNew: () => chats.newChat() };
+
   const composer =
     mode === "ask" ? (
       <Composer
-        placeholder={`Ask what ${personName("u_expert")} knows`}
+        {...shared}
+        placeholder="Ask anything that was handed over"
         disabled={!!busy}
         onSend={ask}
         onMicStart={canDictate ? micStart : undefined}
@@ -170,9 +173,13 @@ export function Chat() {
       />
     ) : (
       <Composer
-        placeholder="Type your answer, or tap the mic"
-        disabled={!!busy || notDana}
-        onSend={(t) => active && answer(active, null, t)}
+        {...shared}
+        placeholder={empty ? "Start with what you do day to day" : "Type your answer, or speak it"}
+        disabled={!!busy || notExpert}
+        onSend={async (t) => {
+          const conv = active?.sessionId ? active : await startInterview();
+          if (conv) answer(conv, null, t);
+        }}
         onMicStart={micStart}
         onMicStop={micStop}
         recording={rec.recording}
@@ -189,41 +196,33 @@ export function Chat() {
   );
 
   if (empty) {
+    const recording = mode === "interview";
     return (
       <div className="relative flex h-full flex-col items-center justify-center px-4">
-        <div className="atmosphere" />
         <div className="relative w-full max-w-2xl">
-          <h1 className="text-center font-serif text-4xl tracking-tight sm:text-5xl">
-            {mode === "interview" ? `${greeting()}, ${personName(user)}` : `What do you need to know?`}
+          <div className="mb-6 flex justify-center">
+            <span className="sticker-float -rotate-6">
+              {recording ? <NoriHeadphonesSticker size={88} peel /> : <PipDetectiveSticker size={88} peel />}
+            </span>
+          </div>
+          <h1 className="text-balance text-center font-serif text-4xl tracking-tight sm:text-5xl">
+            {recording ? "What do you know that nobody else does?" : "What do you need to know?"}
           </h1>
           <p className="mx-auto mt-3 max-w-md text-center text-[15px] text-muted">
-            {mode === "interview"
-              ? "Tell Grandpa how you run things. He asks, you answer, and what you say is saved for the people after you."
-              : `Ask anything ${personName("u_expert")} taught Grandpa. Answers come in her own words.`}
+            {recording
+              ? "Talk or type. Handover asks the questions and keeps your answers for whoever takes over."
+              : "Ask about anything that was handed over. Every answer links back to the original recording."}
           </p>
           <div className="mt-8">
             {errors}
-            {mode === "ask" ? (
-              <>
-                {composer}
-                <div className="mt-4 flex flex-wrap justify-center gap-2">
-                  {SUGGESTIONS.map((s) => (
-                    <button key={s} onClick={() => ask(s)} disabled={!!busy} className="rounded-full border border-line bg-surface/60 px-3.5 py-1.5 text-sm text-muted transition hover:bg-hover hover:text-ink">
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : notDana ? (
-              <DanaOnly />
-            ) : (
-              <div className="flex flex-wrap justify-center gap-3">
-                <Button onClick={startInterview} disabled={!!busy} className="px-5 py-2.5">
-                  {busy ?? "Start the interview"}
-                </Button>
-                <Button variant="ghost" onClick={() => setCalling(true)} disabled={!!busy} className="px-5 py-2.5">
-                  <IconPhone /> Talk instead
-                </Button>
+            {notExpert ? <ExpertOnly /> : composer}
+            {mode === "ask" && (
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                {SUGGESTIONS.map((s) => (
+                  <button key={s} onClick={() => ask(s)} disabled={!!busy} className="glass rounded-full border border-line px-3.5 py-1.5 text-sm text-muted transition hover:bg-hover hover:text-ink">
+                    {s}
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -255,18 +254,18 @@ export function Chat() {
       </div>
       <div className="px-4 pb-5">
         {errors}
-        <div className="mx-auto w-full max-w-2xl">{notDana ? <DanaOnly /> : composer}</div>
+        <div className="mx-auto w-full max-w-2xl">{notExpert ? <ExpertOnly /> : composer}</div>
       </div>
     </div>
   );
 }
 
-function DanaOnly() {
+function ExpertOnly() {
   return (
-    <div className="flex flex-col items-center gap-3 text-center text-sm text-muted">
-      <p>Interviews are with Dana, the person handing over.</p>
+    <div className="glass flex flex-col items-center gap-3 rounded-2xl border border-line px-4 py-5 text-center text-sm text-muted">
+      <p>Recording is for the person handing over. Switch roles to record, or ask instead.</p>
       <Button variant="ghost" onClick={() => setUserId("u_expert")}>
-        Switch to Dana
+        Switch to Handing over
       </Button>
     </div>
   );
@@ -297,7 +296,7 @@ function Bubble({ m }: { m: Message }) {
       </div>
     );
   }
-  if (m.role === "grandpa") {
+  if (m.role === "answer") {
     const r = m.answer;
     return (
       <div className="msg-in flex gap-3">
@@ -310,7 +309,7 @@ function Bubble({ m }: { m: Message }) {
                 <div key={s.memory.id} className="rounded-2xl border border-line bg-surface px-4 py-3">
                   {s.transcript && <p className="text-sm text-muted">“{s.transcript}”</p>}
                   <div className={s.transcript ? "mt-2" : ""}>
-                    <PlayButton url={s.clip_url} text={s.transcript ?? s.memory.text} label="Hear Dana say it" />
+                    <PlayButton url={s.clip_url} text={s.transcript ?? s.memory.text} label="Play the original" />
                   </div>
                 </div>
               ))}
@@ -319,7 +318,7 @@ function Bubble({ m }: { m: Message }) {
           {r.blocked_count > 0 && (
             <p className="flex items-center gap-1.5 text-sm text-soft">
               <IconLock className="h-3.5 w-3.5" />
-              Some of Dana’s notes aren’t shared with you.
+              Some notes aren’t shared with you.
             </p>
           )}
         </div>
@@ -330,5 +329,5 @@ function Bubble({ m }: { m: Message }) {
 }
 
 function Avatar() {
-  return <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent font-serif text-sm text-on-accent">g</span>;
+  return <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent font-serif text-sm text-on-accent">h</span>;
 }

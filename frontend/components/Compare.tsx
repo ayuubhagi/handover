@@ -36,7 +36,7 @@ export function Compare() {
     <div>
       <div className="mb-5 max-w-2xl">
         <h2 className="text-lg font-semibold">Memory on vs off</h2>
-        <p className="mt-2 text-muted">The same question, with and without Dana’s governed memories.</p>
+        <p className="mt-2 text-muted">The same question, with and without the handed-over memories.</p>
       </div>
       <form
         onSubmit={(e) => {

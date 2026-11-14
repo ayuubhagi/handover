@@ -1,11 +1,33 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { IconArrowUp, IconMic, IconPhone, IconStop } from "./icons";
+import { IconArrowUp, IconMic, IconPhone, IconPlus, IconStop } from "./icons";
+import { Menu } from "./Menu";
+import type { Mode } from "./store";
+
+const MODES: { value: Mode; label: string; hint: string; icon: React.ReactNode }[] = [
+  { value: "interview", label: "Record", hint: "Talk it through. What you say is saved.", icon: <ModeGlyph mode="interview" /> },
+  { value: "ask", label: "Ask", hint: "Ask what has been handed over.", icon: <ModeGlyph mode="ask" /> },
+];
+
+function ModeGlyph({ mode }: { mode: Mode }) {
+  // Three little bars, like a level meter. Orange for recording, teal for asking.
+  const c = mode === "interview" ? "bg-accent" : "bg-[#78d6d2]";
+  return (
+    <span className="flex h-3 items-end gap-[2px]" aria-hidden="true">
+      <span className={`w-[3px] rounded-[1px] ${c}`} style={{ height: "55%" }} />
+      <span className={`w-[3px] rounded-[1px] ${c}`} style={{ height: "100%" }} />
+      <span className={`w-[3px] rounded-[1px] ${c} opacity-70`} style={{ height: "70%" }} />
+    </span>
+  );
+}
 
 export function Composer({
   placeholder,
   disabled,
+  mode,
+  onMode,
+  onNew,
   onSend,
   onMicStart,
   onMicStop,
@@ -16,6 +38,9 @@ export function Composer({
 }: {
   placeholder: string;
   disabled?: boolean;
+  mode: Mode;
+  onMode: (m: Mode) => void;
+  onNew: () => void;
   onSend: (text: string) => void;
   onMicStart?: () => void;
   onMicStop?: () => void;
@@ -47,59 +72,75 @@ export function Composer({
         e.preventDefault();
         submit();
       }}
-      className="glass flex items-end gap-2 rounded-[26px] border border-line p-2 pl-5 shadow-[var(--shadow-pop)]"
+      className="composer rounded-2xl border border-line-strong/70 shadow-[var(--shadow-pop)]"
     >
-      {recording ? (
-        <div className="flex min-h-10 flex-1 items-center gap-3 text-sm text-muted" aria-live="polite">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
-          Listening
-          <Bars level={level ?? 0} />
+      <div className="px-4 pt-3.5">
+        {recording ? (
+          <div className="flex min-h-12 items-center gap-3 text-sm text-muted" aria-live="polite">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
+            Listening
+            <Bars level={level ?? 0} />
+          </div>
+        ) : (
+          <textarea
+            ref={ref}
+            rows={1}
+            value={text}
+            autoFocus={autoFocus}
+            aria-label={placeholder}
+            placeholder={placeholder}
+            disabled={disabled}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                submit();
+              }
+            }}
+            className="block max-h-[180px] min-h-12 w-full resize-none bg-transparent text-[15px] leading-6 placeholder:text-soft disabled:opacity-60"
+          />
+        )}
+      </div>
+      <div className="flex items-center gap-1 px-2 pb-2 pt-1">
+        <button type="button" onClick={onNew} aria-label="New conversation" className="grid h-8 w-8 place-items-center rounded-full text-muted transition hover:bg-hover hover:text-ink">
+          <IconPlus />
+        </button>
+        <Menu label="Mode" value={mode} onChange={onMode} options={MODES} placement="top-start" />
+        <div className="ml-auto flex items-center gap-1">
+          {onCall && !recording && (
+            <button
+              type="button"
+              onClick={onCall}
+              disabled={disabled}
+              className="flex h-8 items-center gap-1.5 rounded-full border border-line px-3 text-[13px] text-muted transition hover:border-accent/50 hover:bg-accent-soft hover:text-accent-ink disabled:opacity-40"
+            >
+              <IconPhone className="h-3.5 w-3.5" />
+              Call
+            </button>
+          )}
+          {onMicStart && (
+            <button
+              type="button"
+              onClick={recording ? onMicStop : onMicStart}
+              disabled={disabled && !recording}
+              aria-label={recording ? "Stop and send" : "Speak instead"}
+              className={`grid h-8 w-8 place-items-center rounded-full transition disabled:opacity-40 ${recording ? "bg-accent text-on-accent" : "text-muted hover:bg-hover hover:text-ink"}`}
+            >
+              {recording ? <IconStop /> : <IconMic />}
+            </button>
+          )}
+          {!recording && (
+            <button
+              type="submit"
+              disabled={disabled || !text.trim()}
+              aria-label="Send"
+              className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-on-primary transition hover:opacity-90 disabled:bg-hover disabled:text-soft"
+            >
+              <IconArrowUp />
+            </button>
+          )}
         </div>
-      ) : (
-        <textarea
-          ref={ref}
-          rows={1}
-          value={text}
-          autoFocus={autoFocus}
-          aria-label={placeholder}
-          placeholder={placeholder}
-          disabled={disabled}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              submit();
-            }
-          }}
-          className="max-h-[180px] min-h-10 flex-1 resize-none bg-transparent py-2.5 text-[15px] leading-5 placeholder:text-soft disabled:opacity-60"
-        />
-      )}
-      {onCall && !recording && (
-        <button type="button" onClick={onCall} disabled={disabled} aria-label="Start a voice call" className="grid h-10 w-10 place-items-center rounded-full text-muted transition hover:bg-hover hover:text-ink disabled:opacity-40">
-          <IconPhone className="h-[18px] w-[18px]" />
-        </button>
-      )}
-      {onMicStart && (
-        <button
-          type="button"
-          onClick={recording ? onMicStop : onMicStart}
-          disabled={disabled && !recording}
-          aria-label={recording ? "Stop and send" : "Answer by voice"}
-          className={`grid h-10 w-10 place-items-center rounded-full transition disabled:opacity-40 ${recording ? "bg-accent text-on-accent" : "text-muted hover:bg-hover hover:text-ink"}`}
-        >
-          {recording ? <IconStop className="h-[18px] w-[18px]" /> : <IconMic className="h-[18px] w-[18px]" />}
-        </button>
-      )}
-      {!recording && (
-        <button
-          type="submit"
-          disabled={disabled || !text.trim()}
-          aria-label="Send"
-          className="grid h-10 w-10 place-items-center rounded-full bg-primary text-on-primary transition hover:opacity-90 disabled:opacity-25"
-        >
-          <IconArrowUp className="h-[18px] w-[18px]" />
-        </button>
-      )}
+      </div>
     </form>
   );
 }
