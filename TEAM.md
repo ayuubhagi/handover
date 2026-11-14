@@ -23,7 +23,7 @@ Root files (PLAN.md, README.md, TEAM.md, .gitignore, .env.example): anyone can a
 ## API contract (base URL: http://localhost:8000)
 
 People (seeded): expert `u_expert` (Dana, retiring ops lead), successor `u_successor` (Sam), outsider `u_outsider` (Riley, another team).
-Every request sends header `X-User-Id` with one of those ids.
+Auth: `POST /login` with `{ "user_id", "passcode" }` returns a signed token (HMAC, 12 h). Every other request sends `Authorization: Bearer <token>`; `/clips/{id}` and `WS /live` also accept `?token=<token>` (for `<audio src>` and WebSocket). `X-User-Id` and `?user_id=` are no longer read. Missing or bad token: 401. Errors are always JSON `{ "detail" }` with CORS headers (401 auth, 403 not allowed, 404, 413 audio too large, 415 not an audio type, 422 bad body, 502 upstream, 503 database or embeddings unavailable).
 
 Memory object:
 ```json
@@ -46,23 +46,25 @@ Memory object:
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
-| POST | /sessions | `{ "expert_id": "u_expert" }` | `{ "session_id", "first_question_text", "first_question_audio_url" }` |
-| POST | /sessions/{session_id}/answer | multipart: `audio` file | `{ "transcript", "memories_created": [Memory], "gaps_created": [Gap], "next_question_text", "next_question_audio_url", "used_memory_ids": [] }` |
-| GET | /memories?owner_id=u_expert | | `[Memory]` |
+| POST | /login | `{ "user_id": "u_expert", "passcode": "..." }` | `{ "token", "expires_at", "user": { "id", "name", "role" } }` |
+| GET | /me | | `{ "id", "name", "role" }` |
+| POST | /sessions | `{ "expert_id": "u_expert", "memory": true }` (`memory` optional, default true; false = interviewer ignores past sessions) | `{ "session_id", "first_question_text", "first_question_audio_url" }` |
+| POST | /sessions/{session_id}/answer | multipart: `audio` file (audio/* only: webm, ogg, mpeg, wav, mp4/m4a, aac, flac; max 25 MB) and/or optional `transcript` text field (used instead of speech to text) | `{ "transcript", "memories_created": [Memory], "gaps_created": [Gap], "next_question_text", "next_question_audio_url", "used_memory_ids": [] }` |
+| GET | /memories?owner_id=u_expert | | `[Memory]` (owner: all statuses; anyone else: only active memories they may read, possibly `[]`, never 403) |
 | PATCH | /memories/{id}/scope | `{ "scope": "team" }` | `Memory` |
 | POST | /memories/{id}/correct | `{ "text": "..." }` | `{ "old": Memory, "new": Memory }` |
 | POST | /memories/{id}/forget | | `{ "forgotten_ids": [], "runbook_steps_removed": [], "audit_id" }` |
-| POST | /ask | `{ "question": "...", "memory": true }` | `{ "answer_text", "sources": [{ "memory": Memory, "clip_url", "transcript" }], "blocked_count": 0, "audit_id" }` |
-| GET | /runbook | | `[{ "id", "text", "derived_from": [], "status" }]` |
+| POST | /ask | `{ "question": "...", "memory": true }` | `{ "answer_text", "sources": [{ "memory": Memory, "clip_url", "transcript" (may be null) }], "blocked_count": 0, "audit_id" }` |
+| GET | /runbook | | `[{ "id", "text", "derived_from": [], "status": "active | needs_review" }]` (needs_review after a source is corrected) |
 | GET | /audit?limit=20 | | `[{ "actor_id", "action", "memory_ids", "allowed", "reason", "ts" }]` |
 | GET | /gaps?owner_id=u_expert | | `[{ "id", "question", "kind": "missing | contradiction", "from_memory_ids": [], "status" }]` |
 | WS | /live | | pushes `{ "type": "memory_changed", "memory": Memory }` and `{ "type": "runbook_changed" }` (from change streams) |
-| GET | /clips/{clip_id} | | audio file |
+| GET | /clips/{clip_id}?token= | | audio file (`X-Content-Type-Options: nosniff`) |
 
 Gap object: `{ "id", "question", "kind", "from_memory_ids", "status": "open | asked | answered" }`
 
 ## Status (each person updates their own line)
-- Ayuub (backend): all contract routes built in /backend (see backend/ARCHITECTURE.md). Not yet tested against Atlas. Run: cd backend, pip install -r requirements.txt, python seed.py, uvicorn main:app. Browser audio and the /live websocket can pass ?user_id= instead of the X-User-Id header.
+- Ayuub (backend): every contract route live against Atlas, 20/20 contract tests pass (real Gemini, Voyage, ElevenLabs, LangSmith, recorded clips). Signed-token auth on every route, audio upload allowlist, JSON errors with CORS. Seeded with Keith's demo content. Run: cd backend, pip install -r requirements.txt, python seed.py, uvicorn main:app --port 8000.
 - Harsh (frontend): Next.js app in /frontend builds clean. Typed client for every contract endpoint + WS /live, mock mode (NEXT_PUBLIC_USE_MOCKS=true, shows a "Mock data" badge). Screens: expert (interview, scope/correct/forget, gaps), successor (ask + live runbook), memory on vs off, audit. Next: wire to real backend.
 - Keith (demo): demo content done and merged (demo/DEMO.md, demo/RESEARCH.md, demo/seed_content.py). Dana and Sam audio generated with ElevenLabs. Waiting on Ayuub to swap the seed (see task below), then rehearsal and video.
 
@@ -91,3 +93,7 @@ Gap object: `{ "id", "question", "kind", "from_memory_ids", "status": "open | as
      e. As u_outsider, the same Halvorsen question returns nothing, and /runbook shows no r_6.
      f. As u_expert, POST /memories/m_5/forget: runbook step r_4 should disappear, with a runbook_changed push on /live.
   6. Don't edit /demo. Reply here with what passed or failed, and I'll fix the content side.
+
+[14:10] Ayuub -> Harsh: BREAKING, auth is live. Keep the role dropdown, no login page. On every switch, silently POST /login `{ "user_id": "u_expert" | "u_successor" | "u_outsider", "passcode" }` with that user's demo passcode (I'll send the passcodes with the .env, keep them out of git), store the returned token, and send `Authorization: Bearer <token>` on every request. For `<audio src>` and WS /live append `?token=<token>` instead of `?user_id=`. On a 401, log in again and retry once. WS /live with a bad token gets `{ "type": "error" }` then close code 4401.
+[14:10] Ayuub -> Harsh: answers to your questions. (1) /clips and /live read `?token=` now (not `?user_id=`). (2) GET /memories for a non-owner returns a filtered list (only active memories they may read, `[]` for Riley), never 403. (3) Your extensions are in the contract table above: optional `transcript` and `memory`, nullable source transcript, `needs_review`. (4) Missing MONGODB_URI is now a JSON 503 with CORS headers, and every other crash is JSON with CORS too. (5) The root Next.js scaffold (src/, public/, package.json, tsconfig.json, eslint.config.mjs, next.config.ts) is deleted, so root lint no longer scans /frontend.
+[14:10] Ayuub -> team: use your own MONGODB_DB (e.g. MONGODB_DB=handover_harsh in your .env, then python seed.py) while testing. Everyone on `handover` at once means one person's seed wipes another's sessions. Keep `handover` for the demo.
