@@ -9,7 +9,8 @@ let timer: ReturnType<typeof setTimeout> | undefined;
 let installed = false;
 
 const scrub = (s: string) =>
-  s.replace(/([?&]token=)[^&\s"']+/g, "$1[redacted]").replace(/(Bearer\s+)[\w.\-]+/g, "$1[redacted]");
+  s.replace(/([?&]token=)[^&\s"']+/g, "$1[redacted]").replace(/(Bearer\s+)[\w.\-]+/g, "$1[redacted]")
+    .replace(/(\\?"(?:token|passcode|password|secret)\\?"\s*:\s*\\?")[^"\\]*/gi, "$1[redacted]");
 
 function toText(v: unknown): string {
   if (v instanceof Error) return `${v.name}: ${v.message}${v.stack ? `\n${v.stack}` : ""}`;
