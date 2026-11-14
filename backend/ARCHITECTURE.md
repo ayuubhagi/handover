@@ -3,6 +3,114 @@
 FastAPI + MongoDB Atlas. Run from `backend/`: `uvicorn main:app --reload`. Python 3.13, sync PyMongo everywhere
 (FastAPI runs `def` endpoints in its threadpool; LangGraph `MongoDBSaver` is sync; change streams run in a thread).
 
+## 0. Diagrams
+
+### System
+
+```mermaid
+flowchart LR
+    subgraph Browser["Frontend (Next.js, /frontend)"]
+        UI["Interview / Ask / Under the hood"]
+        AUD["&lt;audio src=?token=&gt;"]
+        WSC["WebSocket /live?token="]
+    end
+
+    subgraph API["FastAPI backend (/backend)"]
+        AUTH["auth.py<br/>POST /login → HMAC token<br/>Bearer on every route"]
+        ROUTES["routes.py<br/>contract routes<br/>audio MIME allowlist"]
+        INT["interview.py<br/>LangGraph interview graph"]
+        EXT["extraction.py + detection.py<br/>memories, gaps, contradictions"]
+        RET["retrieval.py<br/>/ask: $rankFusion hybrid search"]
+        GOV["governance.py<br/>scope, correct, forget cascade"]
+        ACC["access.py<br/>scope rules → query filters"]
+        LIVE["live.py<br/>change stream thread + WS hub<br/>TTL expiry cascade"]
+        VOICE["voice.py"]
+    end
+
+    subgraph Atlas["MongoDB Atlas (handover db)"]
+        MEM[("memories<br/>$jsonSchema · TTL expires_at<br/>Vector Search + Atlas Search")]
+        RB[("runbook_steps")]
+        GAPS[("gaps")]
+        AUDIT[("audit_log")]
+        CLIPS[("clips + GridFS audio")]
+        PEOPLE[("people / sessions")]
+        CK[("checkpoints<br/>LangGraph MongoDBSaver")]
+    end
+
+    subgraph Ext["External services"]
+        VOY["Voyage AI<br/>voyage-3.5 embeddings"]
+        GEM["Gemini<br/>model fallback chain"]
+        EL["ElevenLabs<br/>speech to text + interviewer voice"]
+        LS["LangSmith traces"]
+    end
+
+    UI -->|Bearer token| AUTH --> ROUTES
+    AUD --> ROUTES
+    WSC --> LIVE
+    ROUTES --> INT & RET & GOV & VOICE
+    INT --> EXT
+    INT <--> CK
+    RET & GOV --> ACC
+    RET -->|"$vectorSearch + $search pre-filtered by scope"| MEM
+    GOV -->|"$graphLookup + transaction"| MEM & RB & GAPS & AUDIT
+    INT --> MEM & RB & GAPS
+    ROUTES --> CLIPS
+    ACC --> PEOPLE
+    RET & GOV & INT --> AUDIT
+    MEM & RB -. change stream .-> LIVE
+    LIVE -. memory_changed / runbook_changed .-> WSC
+    EXT & RET --> GEM
+    EXT & RET & GOV --> VOY
+    VOICE --> EL
+    INT & RET & EXT -.-> LS
+```
+
+### Interview loop (LangGraph, state checkpointed in Atlas)
+
+```mermaid
+flowchart LR
+    S([POST /sessions]) --> R[recall<br/>open gaps, contradictions first<br/>+ recent memories]
+    R --> A[ask<br/>contradiction > missing gap ><br/>Gemini follow-up > stock question]
+    A --> L[listen<br/>interrupt: wait for answer]
+    L -->|"POST /answer<br/>audio → ElevenLabs STT"| E[extract<br/>Gemini → memories + Voyage embeddings<br/>+ runbook steps]
+    E --> D[detect<br/>gaps + contradictions vs related memories<br/>mark asked gap answered]
+    D --> R
+    L -.->|checkpoint| CK[(MongoDBSaver)]
+```
+
+### Successor asks (leak prevention inside the query)
+
+```mermaid
+sequenceDiagram
+    participant Sam as Successor (Bearer token)
+    participant API as POST /ask
+    participant Atlas as Atlas memories
+    participant Gem as Gemini
+    Sam->>API: question, memory: true
+    API->>API: verify HMAC token → person → allowed scopes [successor, team]
+    API->>Atlas: $rankFusion($vectorSearch filter{owner, status, scope ∈ allowed, not expired}, $search same filters)
+    Atlas-->>API: readable memories + $lookup clip
+    API->>Atlas: same search without scope → count withheld (ids + scope only)
+    API->>Gem: answer grounded only in readable memories
+    API->>Atlas: audit_log {actor, memory_ids, allowed: withheld == 0}
+    API-->>Sam: answer_text, sources + clip_url, blocked_count
+```
+
+### Forget cascade (one transaction)
+
+```mermaid
+flowchart TB
+    F([POST /memories/id/forget]) --> G["$graphLookup<br/>supersedes chain (older + newer versions)<br/>then everything derived_from them"]
+    G --> T{{multi-document transaction}}
+    T --> M1["memories → forgotten, text redacted, embedding unset"]
+    T --> M2["runbook_steps built on them → removed"]
+    T --> M3["gaps about them → deleted"]
+    T --> M4["clip transcripts → redacted"]
+    T --> M5["audit_log → forget entry"]
+    T -->|commit| CS["change stream → /live:<br/>memory_changed + runbook_changed"]
+    T -->|after commit| GF["GridFS audio deleted"]
+```
+
 ## 1. File layout and ownership
 
 Flat modules, imported as `import db`, `import models`, etc.
@@ -73,11 +181,11 @@ All validators are `validationLevel: strict`, `validationAction: error`. Full de
 
 `readable_filter(viewer, owner_id, now)` = `{owner_id, status: "active", scope: {$in: allowed}, expires_at: {$gt: now}}`.
 This exact filter goes into `$vectorSearch.filter`; the Atlas Search side builds the same thing with `compound.filter`.
-Only the owner can set scope, correct, or forget. Unknown `X-User-Id` -> 401.
+Only the owner can set scope, correct, or forget. Missing, forged or expired token -> 401.
 
 ## 5. Endpoints and pipelines
 
-Every endpoint resolves `viewer = access.require_person(X-User-Id)`.
+Every endpoint except `/login` and `/health` resolves `viewer = auth.person_from_token(Bearer token)`. `POST /login {user_id, passcode}` checks `DEMO_PASSCODES` and returns `base64url({sub, exp}).base64url(HMAC-SHA256(AUTH_SECRET))`. A client-asserted user id is never trusted.
 
 ### POST /ask (`retrieval.ask`)
 Owner = `access.default_expert_id()`. `memory: false` -> no retrieval, LLM answers with no context, `sources: []`, audited.
@@ -183,8 +291,8 @@ See section 7. Answer flow: save audio to GridFS as a clip -> ElevenLabs speech 
 
 ### GET /clips/{clip_id}
 Streams GridFS audio. Expert clips are only served if the viewer can read at least one active memory from that clip
-(or owns it). Interviewer clips are served to anyone seeded. Browsers cannot set headers on `<audio>`, so
-`?user_id=` is accepted as a fallback for this route and for `/live`.
+(or owns it). Interviewer clips are served to anyone logged in. Browsers cannot set headers on `<audio>` or WebSockets, so
+`?token=` is accepted for this route and for `/live`. Responses carry `X-Content-Type-Options: nosniff`, and uploads only accept audio/* types.
 
 ## 6. Change streams -> websocket (`live.py`)
 
