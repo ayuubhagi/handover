@@ -183,7 +183,7 @@ export function Chat() {
   if (empty) {
     return (
       <div className="relative flex h-full flex-col items-center justify-center px-4">
-        {progress && <div className="absolute inset-x-0 top-14 px-4 md:top-4">{progress}</div>}
+        {progress && <div className="absolute inset-x-0 top-16 px-4">{progress}</div>}
         <div className="relative w-full max-w-2xl">
           <h1 className="text-balance text-center font-serif text-4xl tracking-tight sm:text-5xl">
             {mode === "interview" ? "What should the next banker know?" : "What do you need to know?"}
@@ -199,7 +199,7 @@ export function Chat() {
 
   return (
     <div className="flex h-full flex-col">
-      {progress && <div className="px-4 pt-14 md:pt-4">{progress}</div>}
+      {progress && <div className="px-4 pt-16">{progress}</div>}
       <div ref={scroller} className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 ${progress ? "pt-4" : "pt-16"}`}>
         <div className="mx-auto w-full max-w-2xl space-y-5 pb-8">
           {active!.messages.map((m) => (
