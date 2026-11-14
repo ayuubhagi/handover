@@ -147,12 +147,19 @@ export const realApi: HandoverApi = {
 
   mediaUrl(url) {
     if (!url) return null;
-    const abs = /^https?:\/\//.test(url) ? url : `${API_URL}${url.startsWith("/") ? "" : "/"}${url}`;
-    if (abs.includes("token=")) return abs;
+    let u: URL;
+    try {
+      u = new URL(url, `${API_URL}/`);
+    } catch {
+      return null;
+    }
+    // Never hand the bearer token to any host other than the backend.
+    if (u.origin !== new URL(API_URL).origin || u.searchParams.has("token")) return u.toString();
     // <audio> can't send headers, so the backend reads ?token= for /clips. Data that contains clip
     // URLs comes from request(), which has already logged in, so the token is cached by now.
     const token = cachedToken();
-    return token ? `${abs}${abs.includes("?") ? "&" : "?"}token=${enc(token)}` : abs;
+    if (token) u.searchParams.set("token", token);
+    return u.toString();
   },
 };
 
