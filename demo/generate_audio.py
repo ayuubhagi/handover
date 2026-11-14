@@ -5,7 +5,7 @@ Nobody's real voice is cloned. In production, the expert's clips are their real 
 
 Run from the repo root:
     ELEVENLABS_API_KEY=... python demo/generate_audio.py            # everything
-    ELEVENLABS_API_KEY=... python demo/generate_audio.py c_2 sam_q2_interest   # only these ids
+    ELEVENLABS_API_KEY=... python demo/generate_audio.py c_2 sam_q2_backup   # only these ids
 
 Writes:
     backend/seed_audio/c_1.mp3 ... c_7.mp3   (Dana's seed clips, read by backend/seed.py)

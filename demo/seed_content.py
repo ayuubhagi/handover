@@ -13,10 +13,10 @@ CLIPS = {
     "c_1": "When the overnight payments batch stalls, restart the payments queue before you touch the ledger "
            "database. If you restart the database first, the batch reloads and every payment in it posts twice. "
            "Then you spend the whole morning reversing them.",
-    "c_2": "Interest-only payments on the syndicated loans are where people get hurt. In LoanDesk, setting the "
-           "principal to the wash account is not enough. You also have to set the front and fund fields to the "
-           "wash account, or the system pays the principal out of our own cash. Three people approve that "
-           "screen, and none of them will catch it, because they're all looking at the same screen.",
+    "c_2": "When a payment gets held by sanctions screening and compliance tells you to push it through by hand, "
+           "you re-key it on the LoanDesk backup screen. Almost nobody uses that screen, so nobody remembers this: "
+           "the amount field comes pre-filled with zeros. Delete them before you type the amount. "
+           "The approvers will look right past it, because the screen looks completely normal.",
     "c_3": "Halvorsen Freight is our touchiest client. Their treasurer, Ingrid, has a standing verbal agreement "
            "that we release their Friday wires up to two million without the second approver. "
            "That is not written down anywhere.",
@@ -38,11 +38,11 @@ MEMORIES = [
      "When the overnight payments batch stalls, restart the payments queue before touching the ledger database. "
      "Restarting the database first reloads the batch and every payment posts twice.", None, []),
     ("m_2", "c_2", "procedure", "successor",
-     "Interest-only payments on syndicated loans in LoanDesk: set the principal, front and fund fields all to the "
-     "wash account. If only principal is set, LoanDesk pays the principal out of the bank's own cash.", None, []),
+     "To push through a payment held by sanctions screening, re-key it on the LoanDesk backup screen. The amount "
+     "field there comes pre-filled with zeros: delete them before typing the amount.", None, []),
     ("m_3", "c_2", "workaround", "team",
-     "The three-person approval on the LoanDesk payment screen does not catch wash account mistakes, because every "
-     "approver sees the same screen. Do not rely on the approvers to catch it.", None, []),
+     "Approvers routinely miss the pre-filled zeros on the LoanDesk backup screen because the screen looks normal. "
+     "Do not rely on the approvers to catch it.", None, []),
     ("m_4", "c_3", "client", "never_transfer",
      "Halvorsen Freight has a verbal agreement with treasurer Ingrid: Friday wires up to 2 million are released "
      "without the second approver. It is not documented anywhere.", None, []),
@@ -60,14 +60,14 @@ MEMORIES = [
      "On-call escalation: payments ops duty manager first, then the LedgerOne vendor hotline if the outage "
      "lasts more than 30 minutes.", None, []),
     ("m_9", "c_2", "procedure", "successor",
-     "Interest-only loan payment checklist: set principal, front and fund to the wash account, and check the fields "
-     "yourself. The three-person approval will not catch a mistake here.", None, ["m_2", "m_3"]),
+     "Backup screen checklist: delete the pre-filled zeros in the amount field, type the amount, and check it "
+     "yourself before approval. The approvers will not catch it.", None, ["m_2", "m_3"]),
 ]
 
 RUNBOOK = [
     ("r_1", "Stalled overnight batch: restart the payments queue before touching the ledger database.", ["m_1"]),
-    ("r_2", "Interest-only loan payment: set principal, front and fund to the wash account, then check the fields "
-            "yourself before approval.", ["m_9"]),
+    ("r_2", "Re-keying a held payment on the LoanDesk backup screen: delete the pre-filled zeros in the amount field "
+            "and check the amount yourself before approval.", ["m_9"]),
     ("r_3", "First business day of the month: rerun the LedgerOne reconciliation report after 10 a.m. Eastern.", ["m_6"]),
     ("r_4", "Routing flags: never reuse R7 while PAY-08 is still running.", ["m_5"]),
     ("r_5", "Outage over 30 minutes: escalate to the duty manager, then the LedgerOne vendor hotline.", ["m_8"]),
@@ -79,8 +79,8 @@ GAPS = [
      "You told me to restart the payments queue before touching the ledger database, but you also said you clear "
      "the database locks first. Which one comes first when the batch stalls?", ["m_1", "m_7"]),
     ("g_2", "missing",
-     "You said to set the front and fund fields to the wash account. Is there any way to check those before the "
-     "payment actually goes out?", ["m_2"]),
+     "You said the backup screen pre-fills the amount field with zeros. Is there any way to catch a wrong amount "
+     "before the payment actually posts?", ["m_2"]),
 ]
 
 # Dana's answer to the contradiction (g_1), used live in session 2. Upload it as the answer audio if the mic or
@@ -94,7 +94,7 @@ DANA_LIVE_ANSWERS = {
 # What Sam asks in the demo, in Sam's voice. Each one is chosen to land a specific point.
 SAM_QUESTIONS = {
     "sam_q1_batch": "The overnight batch just stalled. What do I do first?",
-    "sam_q2_interest": "I'm sending the interest-only payment on a syndicated loan tonight. Anything I need to watch for?",
+    "sam_q2_backup": "A payment is stuck in sanctions screening and compliance says to push it through by hand. How do I do that?",
     "sam_q3_flag": "Can I reuse routing flag R7 for the new instant payments feature?",
     "sam_q4_halvorsen": "Is there anything special about Halvorsen Freight's Friday wires?",
 }
