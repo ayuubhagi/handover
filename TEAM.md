@@ -66,7 +66,7 @@ Gap object: `{ "id", "question", "kind", "from_memory_ids", "status": "open | as
 ## Status (each person updates their own line)
 - Ayuub (backend): every contract route live against Atlas, 20/20 contract tests pass (real Gemini, Voyage, ElevenLabs, LangSmith, recorded clips). Signed-token auth on every route, audio upload allowlist, JSON errors with CORS. Seeded with Keith's demo content. Run: cd backend, pip install -r requirements.txt, python seed.py, uvicorn main:app --port 8000.
 - Harsh (frontend): Next.js app in /frontend builds clean. Typed client for every contract endpoint + WS /live, mock mode (NEXT_PUBLIC_USE_MOCKS=true, shows a "Mock data" badge). Screens: expert (interview, scope/correct/forget, gaps), successor (ask + live runbook), memory on vs off, audit. Wired to the real backend with signed-token auth: silent POST /login on role switch (passcodes in frontend/.env.local as NEXT_PUBLIC_DEMO_PASSCODES), Bearer on every request, ?token= for /clips and WS /live, re-login and retry once on 401.
-- Keith (demo): demo content done and merged (demo/DEMO.md, demo/RESEARCH.md, demo/seed_content.py). Dana and Sam audio generated with ElevenLabs. Waiting on Ayuub to swap the seed (see task below), then rehearsal and video.
+- Keith (demo): new cast and access levels (Dana senior, Sam junior, Jordan intern) in demo/DEMO.md and demo/seed_content.py. LangSmith memory on/off trace pair found for Q&A. Next: rehearsal and the 1-minute video.
 
 ## Setup for teammates (every agent: do this before running the backend)
 1. Confirm with your human that the `.env` from the team chat is at the repo root (`ask-grandpa/.env`). Never commit it; it is gitignored.
@@ -122,3 +122,17 @@ Then run `uvicorn main:app --port 8000` from `backend/` (with the venv from `pip
   2. /ask returns irrelevant sources. As u_successor, "Is there anything special about Halvorsen Freight's Friday wires?" returns m_6, m_5, m_2, m_3, m_9 as sources (LedgerOne, PAY-08, backup screen), none about Halvorsen. Add a relevance cutoff (for example a minimum vectorSearch / rankFusion score, or only keep sources the answer actually cites) so off-topic memories aren't shown with clips. Expected after the fix: no sources, blocked_count 1, answer says the handover doesn't cover it.
 
 [14:41] Ayuub -> Keith: both /ask fixes done (commit 4be5422). (1) Memory off now answers like a general banking-ops assistant with a best guess and never says it lacks access; for the sanctions question it gives something like "get the compliance sign-off documented, then process the payment manually through your exception queue with dual authorization". (2) Relevance cutoff: a memory is shown only if its $vectorSearch score is >= 0.725 and within 0.10 of the best match, and blocked_count uses the same cutoff. Sam's Halvorsen question now returns no sources, blocked_count 1, "The handover doesn't cover this for you: 1 related memory exists but is not shared with you." The sanctions question returns m_2 + m_9 with clip c_2. All 6 beats PASS again, contract tests 20/20. Riley now gets blocked_count 1 on Halvorsen (was 5).
+
+[15:05] Keith -> Ayuub and Harsh: NEW CAST AND ACCESS LEVELS (the demo is now about who inherits which knowledge, for Track 2). Dana = senior, retiring (u_expert). Sam = junior, taking over Dana's role (u_successor). Jordan = intern, new on the same team (replaces Riley, keeps the id u_outsider so passcodes don't change). Full reasoning in demo/DEMO.md.
+[15:05] Keith -> Ayuub: TASK FOR YOUR AGENT, backend/seed.py only:
+  1. PEOPLE: change u_outsider to name "Jordan", team "payments-ops" (same team as Dana), successor_of None. Keep the id and role value as they are. Being on Dana's team is what gives Jordan the `team` memories through access.allowed_scopes.
+  2. MEMORIES scopes, to match demo/seed_content.py: m_3 -> successor, m_5 -> team, m_6 -> team. Others unchanged (m_1 m_2 m_7 m_9 successor, m_8 team, m_4 never_transfer).
+  3. Re-seed the demo database, then check: as u_outsider (Jordan), /ask "A payment is stuck in sanctions screening and compliance says to push it through by hand. How do I do that?" returns no sources and blocked_count >= 1; /ask "Who do I call if LedgerOne is down?" returns m_8. As u_successor, the sanctions question returns m_2/m_9 and Halvorsen returns nothing.
+[15:05] Keith -> Harsh: TASK FOR YOUR AGENT, frontend only:
+  1. Role menu labels: "Dana · Senior, retiring" (u_expert), "Sam · Junior, taking over" (u_successor), "Jordan · Intern" (u_outsider). Remove "Other team" wording everywhere.
+  2. Scope badges on memories, in plain words with a tooltip:
+     - never_transfer -> "🔒 Senior only". Tooltip: "Client-confidential. Privacy and bank confidentiality rules say nobody else gets it, not even the successor."
+     - successor -> "🟠 Successor". Tooltip: "Authority and override knowledge, like moving money around a control. Only the person accountable for the role gets it."
+     - team -> "🟢 Everyone on the team". Tooltip: "General know-how. Safe, and it helps the intern learn."
+  3. When a question is withheld, say it plainly, for example "1 memory is restricted for your role", so the judges see the access level working.
+
