@@ -44,6 +44,12 @@ npm install
 npm run dev
 ```
 
+## Git workflow (we are 3+ people pushing at once)
+
+- **Pull before you start and after every commit:** `git pull --rebase origin main`, then push.
+- Fix any conflicts right away, then make sure the app still runs before moving on.
+- Keep commits small and push often so nobody drifts far from `main`.
+
 ## Team
 
 Ayuub Hagi, Harsh (GreenKeewi), Keith V Singh (KVS-ALT)

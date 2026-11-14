@@ -39,6 +39,12 @@ Demo: a retiring bank operations lead. Product: a governed memory engine for any
 - Harsh: frontend (expert view, successor view, live updates, memory on vs off)
 - Keith: demo script, recorded expert sessions, pitch, 1 minute video, README
 
+## Git workflow (we are 3+ people pushing at once)
+
+- **Pull before you start and after every commit:** `git pull --rebase origin main`, then push.
+- Fix any conflicts right away, then make sure the app still runs before moving on.
+- Keep commits small and push often so nobody drifts far from `main`.
+
 ## Must haves
 1. Session 2 asks a contradiction/gap follow-up from session 1
 2. Successor asks, gets scope-filtered answer + real clip; outsider gets blocked
