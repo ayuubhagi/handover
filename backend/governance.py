@@ -80,7 +80,7 @@ def list_runbook(viewer: dict) -> list[dict]:
 def list_audit(viewer: dict, limit: int = 20) -> list[dict]:
     """Newest first. Outsiders only see their own entries."""
     limit = max(1, min(20 if limit is None else int(limit), 200))
-    query = {"actor_id": viewer["_id"]} if viewer.get("role") == "outsider" else {}
+    query = {"actor_id": viewer["_id"]} if viewer.get("role") == "intern" else {}
     return [audit_out(d) for d in db.col(db.AUDIT).find(query).sort("ts", -1).limit(limit)]
 
 

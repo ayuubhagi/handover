@@ -82,7 +82,7 @@ flowchart LR
 
 ```mermaid
 sequenceDiagram
-    participant Sam as Successor (Bearer token)
+    participant Sam as Sam, junior (Bearer token)
     participant API as POST /ask
     participant Atlas as Atlas memories
     participant Gem as Gemini
@@ -144,7 +144,7 @@ Flat modules, imported as `import db`, `import models`, etc.
 Ids are strings: `m_`, `c_`, `s_`, `r_`, `g_`, `a_` + 8 hex chars (`models.new_id`). Stored as `_id`, returned as `id`.
 All validators are `validationLevel: strict`, `validationAction: error`. Full definitions live in `schemas.py`.
 
-- **people** `{_id, name, role: expert|successor|outsider, team, successor_of: str|null}`
+- **people** `{_id, name, role: senior|junior|intern, team, successor_of: str|null}`
 - **clips** `{_id, owner_id, speaker: expert|interviewer, audio_url, transcript, session_id, audio_file_id: ObjectId|null, content_type, created_at}`
 - **memories** required: `owner_id, kind, text, scope, status, version, source_clip_id, session_id, created_at, expires_at`.
   `kind: procedure|system|client|workaround`, `scope: successor|team|never_transfer`, `status: active|corrected|forgotten`,
@@ -174,10 +174,13 @@ All validators are `validationLevel: strict`, `validationAction: error`. Full de
 ## 4. Access rules (`access.py`)
 
 `allowed_scopes(viewer, owner_id)`:
-- viewer is the owner: `successor, team, never_transfer`
-- viewer.successor_of == owner: `successor, team`
-- viewer.team == owner's team: `team`
-- anyone else (Riley): `[]`
+- viewer is the owner (Dana, senior): `successor, team, never_transfer`
+- viewer.successor_of == owner (Sam, junior): `successor, team`
+- viewer.team == owner's team (Jordan, intern on payments-ops): `team`
+- anyone else: `[]`
+
+Clip audio follows the memories: a clip is served only if the viewer can read at least one active memory from it, so a
+recording that backs a successor-only memory must not also back a team memory (seed keeps them on separate clips).
 
 `readable_filter(viewer, owner_id, now)` = `{owner_id, status: "active", scope: {$in: allowed}, expires_at: {$gt: now}}`.
 This exact filter goes into `$vectorSearch.filter`; the Atlas Search side builds the same thing with `compound.filter`.

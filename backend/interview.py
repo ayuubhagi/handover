@@ -162,7 +162,7 @@ def detect(state: State) -> dict:
         answered = db.col(db.GAPS).find_one({"_id": state["current_gap_id"]}) if state.get("current_gap_id") else None
         resolved = set(answered["from_memory_ids"]) if answered else set()
         found = [g for g in found if not (g["kind"] == "contradiction" and resolved & set(g["from_memory_ids"]))]
-        gaps =[models.build_gap(expert, g["question"], g["kind"], g["from_memory_ids"], session_id=sid) for g in found]
+        gaps = [models.build_gap(expert, g["question"], g["kind"], g["from_memory_ids"], session_id=sid) for g in found]
         if gaps:
             db.col(db.GAPS).insert_many(gaps)
         gap_ids = [g["_id"] for g in gaps]
@@ -206,7 +206,7 @@ def _config(session_id: str, expert_id: str, memory_on: bool) -> dict:
 @traceable(name="start_session")
 def start_session(expert_id: str, memory_on: bool = True) -> dict:
     person = db.col(db.PEOPLE).find_one({"_id": expert_id})
-    if not person or person.get("role") != "expert":
+    if not person or person.get("role") != "senior":
         raise errors.NotFound(f"expert {expert_id} not found")
     sid = models.new_id("s")
     db.col(db.SESSIONS).insert_one({"_id": sid, "expert_id": expert_id, "memory_on": memory_on,

@@ -26,9 +26,9 @@ def login(user_id: str) -> dict:
 
 
 TOKENS = {uid: login(uid)["token"] for uid in ("u_expert", "u_successor", "u_outsider")}
-EXPERT = {"Authorization": f"Bearer {TOKENS['u_expert']}"}
-SUCCESSOR = {"Authorization": f"Bearer {TOKENS['u_successor']}"}
-OUTSIDER = {"Authorization": f"Bearer {TOKENS['u_outsider']}"}
+SENIOR = {"Authorization": f"Bearer {TOKENS['u_expert']}"}
+JUNIOR = {"Authorization": f"Bearer {TOKENS['u_successor']}"}
+INTERN = {"Authorization": f"Bearer {TOKENS['u_outsider']}"}
 
 MEMORY_KEYS = {"id", "owner_id", "kind", "text", "scope", "status", "version", "supersedes", "derived_from",
                "source_clip_id", "session_id", "created_at", "expires_at"}
@@ -47,7 +47,7 @@ def assert_audio(api, url):
     if url is None:
         assert not EXPECT_AUDIO, "interviewer audio missing"
         return
-    r = api.get(url, headers=EXPERT)
+    r = api.get(url, headers=SENIOR)
     assert r.status_code == 200 and r.headers["content-type"] == "audio/mpeg" and len(r.content) > 1000
 
 
@@ -71,9 +71,9 @@ def test_identity_is_token_not_header(api):
     assert api.get("/memories", headers={"X-User-Id": "u_expert"}).status_code == 401
     assert api.get("/clips/c_1", params={"user_id": "u_expert"}).status_code == 401
     payload, sig = TOKENS["u_outsider"].split(".")
-    forged = TOKENS["u_expert"].split(".")[0] + "." + sig  # expert claims, outsider signature
+    forged = TOKENS["u_expert"].split(".")[0] + "." + sig  # Dana claims, Jordan signature
     assert api.get("/memories", headers={"Authorization": f"Bearer {forged}"}).status_code == 401
-    assert api.get("/me", headers=EXPERT).json() == {"id": "u_expert", "name": "Dana", "role": "expert"}
+    assert api.get("/me", headers=SENIOR).json() == {"id": "u_expert", "name": "Dana", "role": "senior"}
 
 
 def test_login_requires_passcode(api):
@@ -83,7 +83,7 @@ def test_login_requires_passcode(api):
     assert api.post("/login", json={"user_id": "u_expert"}).status_code == 401
     assert api.post("/login", json={"user_id": "u_nobody", "passcode": "1"}).status_code == 401
     body = login("u_successor")
-    assert set(body) == {"token", "expires_at", "user"} and body["user"]["role"] == "successor"
+    assert set(body) == {"token", "expires_at", "user"} and body["user"]["role"] == "junior" and body["user"]["name"] == "Sam"
 
 
 def test_errors_are_json_with_cors(api):
@@ -93,19 +93,22 @@ def test_errors_are_json_with_cors(api):
 
 
 def test_memories_scoped_per_viewer(api):
-    mine = api.get("/memories", params={"owner_id": "u_expert"}, headers=EXPERT).json()
+    mine = api.get("/memories", params={"owner_id": "u_expert"}, headers=SENIOR).json()
     assert len(mine) >= 9
     for m in mine:
         assert_memory(m)
-    theirs = api.get("/memories", params={"owner_id": "u_expert"}, headers=SUCCESSOR).json()
+    theirs = api.get("/memories", params={"owner_id": "u_expert"}, headers=JUNIOR).json()
     assert theirs and all(m["scope"] in {"successor", "team"} and m["status"] == "active" for m in theirs)
     assert "m_4" not in {m["id"] for m in theirs}
-    assert api.get("/memories", params={"owner_id": "u_expert"}, headers=OUTSIDER).json() == []
+    # Jordan (intern, same team) reads team-scoped memories only.
+    intern = api.get("/memories", params={"owner_id": "u_expert"}, headers=INTERN).json()
+    assert {m["id"] for m in intern} == {"m_5", "m_6", "m_8"} and all(m["scope"] == "team" for m in intern), intern
+    assert api.get("/me", headers=INTERN).json() == {"id": "u_outsider", "name": "Jordan", "role": "intern"}
 
 
 def test_ask_successor_gets_sources(api):
     r = api.post("/ask", json={"question": "A payment is stuck in sanctions screening and compliance says to push it through by hand. How do I do that?", "memory": True},
-                 headers=SUCCESSOR)
+                 headers=JUNIOR)
     assert r.status_code == 200, r.text
     body = r.json()
     assert set(body) == {"answer_text", "sources", "blocked_count", "audit_id"}
@@ -120,127 +123,136 @@ def test_ask_successor_gets_sources(api):
 
 def test_ask_never_transfer_stays_private(api):
     q = {"question": "What is the arrangement with Halvorsen Freight for Friday wires?", "memory": True}
-    owner = api.post("/ask", json=q, headers=EXPERT).json()
+    owner = api.post("/ask", json=q, headers=SENIOR).json()
     assert "m_4" in {s["memory"]["id"] for s in owner["sources"]}
-    succ = api.post("/ask", json=q, headers=SUCCESSOR).json()
+    succ = api.post("/ask", json=q, headers=JUNIOR).json()
     assert "m_4" not in {s["memory"]["id"] for s in succ["sources"]}
     # Relevance cutoff: nothing off-topic is shown, and only the on-topic withheld memory is counted.
     assert succ["sources"] == [] and succ["blocked_count"] == 1, succ
     assert "doesn't cover" in succ["answer_text"]
 
 
-def test_ask_outsider_blocked_and_audited(api):
+def test_ask_intern_blocked_and_audited(api):
     r = api.post("/ask", json={"question": "A payment is stuck in sanctions screening and compliance says to push it through by hand. How do I do that?", "memory": True},
-                 headers=OUTSIDER).json()
+                 headers=INTERN).json()
     assert r["sources"] == [] and r["blocked_count"] >= 1
-    audit = api.get("/audit", params={"limit": 50}, headers=EXPERT).json()
+    audit = api.get("/audit", params={"limit": 50}, headers=SENIOR).json()
     assert set(audit[0]) == {"actor_id", "action", "memory_ids", "allowed", "reason", "ts"}
     assert any(a["actor_id"] == "u_outsider" and a["action"] == "ask" and a["allowed"] is False for a in audit)
 
 
+def test_intern_reads_team_memories(api):
+    r = api.post("/ask", json={"question": "Who do I call if LedgerOne is down?", "memory": True}, headers=INTERN).json()
+    ids = {s["memory"]["id"] for s in r["sources"]}
+    assert "m_8" in ids and all(s["memory"]["scope"] == "team" for s in r["sources"]), r
+
+
 def test_ask_memory_off(api):
     r = api.post("/ask", json={"question": "A payment is stuck in sanctions screening and compliance says to push it through by hand. How do I do that?", "memory": False},
-                 headers=SUCCESSOR).json()
+                 headers=JUNIOR).json()
     assert r["sources"] == [] and r["blocked_count"] == 0 and r["answer_text"]
     low = r["answer_text"].lower()
     assert not any(w in low for w in ("don't have access", "do not have access", "contact it", "consult", "zeros")), r
 
 
 def test_runbook_visibility(api):
-    full = api.get("/runbook", headers=EXPERT).json()
+    full = api.get("/runbook", headers=SENIOR).json()
     assert set(full[0]) == {"id", "text", "derived_from", "status"}
     assert {"r_1", "r_6"} <= {s["id"] for s in full}
-    succ = {s["id"] for s in api.get("/runbook", headers=SUCCESSOR).json()}
+    succ = {s["id"] for s in api.get("/runbook", headers=JUNIOR).json()}
     assert "r_1" in succ and "r_6" not in succ  # r_6 is built from a never_transfer memory
-    assert api.get("/runbook", headers=OUTSIDER).json() == []
+    intern = {s["id"] for s in api.get("/runbook", headers=INTERN).json()}
+    assert intern == {"r_3", "r_4", "r_5"}, intern  # only steps built from team memories (m_5, m_6, m_8)
 
 
 def test_gaps(api):
-    gaps = api.get("/gaps", params={"owner_id": "u_expert"}, headers=EXPERT).json()
+    gaps = api.get("/gaps", params={"owner_id": "u_expert"}, headers=SENIOR).json()
     assert {"g_1", "g_2"} <= {g["id"] for g in gaps}
     assert all(set(g) == GAP_KEYS for g in gaps)
-    assert api.get("/gaps", params={"owner_id": "u_expert"}, headers=OUTSIDER).json() == []
+    assert api.get("/gaps", params={"owner_id": "u_expert"}, headers=INTERN).json() == []
 
 
 def test_governance_is_owner_only(api):
-    assert api.patch("/memories/m_2/scope", json={"scope": "successor"}, headers=SUCCESSOR).status_code == 403
-    assert api.post("/memories/m_2/correct", json={"text": "x"}, headers=SUCCESSOR).status_code == 403
-    assert api.post("/memories/m_2/forget", headers=OUTSIDER).status_code == 403
-    assert api.patch("/memories/m_2/scope", json={"scope": "everyone"}, headers=EXPERT).status_code == 422
-    assert api.post("/memories/m_nope/forget", headers=EXPERT).status_code == 404
+    assert api.patch("/memories/m_2/scope", json={"scope": "successor"}, headers=JUNIOR).status_code == 403
+    assert api.post("/memories/m_2/correct", json={"text": "x"}, headers=JUNIOR).status_code == 403
+    assert api.post("/memories/m_2/forget", headers=INTERN).status_code == 403
+    assert api.patch("/memories/m_2/scope", json={"scope": "everyone"}, headers=SENIOR).status_code == 422
+    assert api.post("/memories/m_nope/forget", headers=SENIOR).status_code == 404
 
 
 def test_scope_change_hides_and_restores(api):
-    r = api.patch("/memories/m_8/scope", json={"scope": "never_transfer"}, headers=EXPERT)
+    r = api.patch("/memories/m_8/scope", json={"scope": "never_transfer"}, headers=SENIOR)
     assert r.status_code == 200, r.text
     assert_memory(r.json())
     assert r.json()["scope"] == "never_transfer"
-    assert "r_5" not in {s["id"] for s in api.get("/runbook", headers=SUCCESSOR).json()}
-    assert "m_8" not in {m["id"] for m in api.get("/memories", headers=SUCCESSOR).json()}
-    api.patch("/memories/m_8/scope", json={"scope": "team"}, headers=EXPERT)
-    assert "r_5" in {s["id"] for s in api.get("/runbook", headers=SUCCESSOR).json()}
+    assert "r_5" not in {s["id"] for s in api.get("/runbook", headers=JUNIOR).json()}
+    assert "m_8" not in {m["id"] for m in api.get("/memories", headers=JUNIOR).json()}
+    api.patch("/memories/m_8/scope", json={"scope": "team"}, headers=SENIOR)
+    assert "r_5" in {s["id"] for s in api.get("/runbook", headers=JUNIOR).json()}
 
 
 def test_correct_versions_memory(api):
     r = api.post("/memories/m_6/correct",
                  json={"text": "Rerun the LedgerOne reconciliation report after 11 a.m. Eastern on the first business day."},
-                 headers=EXPERT)
+                 headers=SENIOR)
     assert r.status_code == 200, r.text
     old, new = r.json()["old"], r.json()["new"]
     assert_memory(old), assert_memory(new)
     assert old["id"] == "m_6" and old["status"] == "corrected"
     assert new["status"] == "active" and new["version"] == 2 and new["supersedes"] == "m_6"
-    step = next(s for s in api.get("/runbook", headers=EXPERT).json() if s["id"] == "r_3")
+    step = next(s for s in api.get("/runbook", headers=SENIOR).json() if s["id"] == "r_3")
     assert step["derived_from"] == [new["id"]] and step["status"] == "needs_review"
-    succ_ids = {m["id"] for m in api.get("/memories", headers=SUCCESSOR).json()}
+    succ_ids = {m["id"] for m in api.get("/memories", headers=JUNIOR).json()}
     assert new["id"] in succ_ids and "m_6" not in succ_ids
 
 
 def test_forget_cascades(api):
-    r = api.post("/memories/m_2/forget", headers=EXPERT)
+    r = api.post("/memories/m_2/forget", headers=SENIOR)
     assert r.status_code == 200, r.text
     body = r.json()
     assert set(body) == {"forgotten_ids", "runbook_steps_removed", "audit_id"}
     assert {"m_2", "m_9"} <= set(body["forgotten_ids"])  # m_9 was derived from m_2
     assert "m_3" not in body["forgotten_ids"]            # a sibling source survives
     assert "r_2" in body["runbook_steps_removed"]         # r_2 was built from m_9
-    assert "r_2" not in {s["id"] for s in api.get("/runbook", headers=EXPERT).json()}
-    mems = {m["id"]: m for m in api.get("/memories", headers=EXPERT).json()}
+    assert "r_2" not in {s["id"] for s in api.get("/runbook", headers=SENIOR).json()}
+    mems = {m["id"]: m for m in api.get("/memories", headers=SENIOR).json()}
     assert mems["m_2"]["status"] == "forgotten" and "zeros" not in mems["m_2"]["text"]
     assert mems["m_3"]["status"] == "active"
-    assert "g_2" not in {g["id"] for g in api.get("/gaps", headers=EXPERT).json()}
-    audit = api.get("/audit", params={"limit": 10}, headers=EXPERT).json()
+    assert "g_2" not in {g["id"] for g in api.get("/gaps", headers=SENIOR).json()}
+    audit = api.get("/audit", params={"limit": 10}, headers=SENIOR).json()
     assert any(a["action"] == "forget" and "m_2" in a["memory_ids"] for a in audit)
     again = api.post("/ask", json={"question": "How do I re-key a held payment on the LoanDesk backup screen?", "memory": True},
-                     headers=SUCCESSOR).json()
+                     headers=JUNIOR).json()
     assert not {"m_2", "m_9"} & {s["memory"]["id"] for s in again["sources"]}
 
 
 def test_clip_access(api):
-    r = api.get("/clips/c_3", headers=OUTSIDER)
+    r = api.get("/clips/c_3", headers=INTERN)
     assert r.status_code == 403
-    assert api.get("/clips/c_3", headers=SUCCESSOR).status_code == 403  # only backs a never_transfer memory
-    r = api.get("/clips/c_1", headers=SUCCESSOR)
+    assert api.get("/clips/c_3", headers=JUNIOR).status_code == 403  # only backs a never_transfer memory
+    r = api.get("/clips/c_1", headers=JUNIOR)
     assert r.status_code == 200 and r.headers["content-type"].startswith("audio/") and len(r.content) > 10_000
     assert r.headers["x-content-type-options"] == "nosniff"
     assert api.get("/clips/c_1", params={"token": TOKENS["u_successor"]}).status_code == 200  # <audio src> fallback
     assert api.get("/clips/c_3", params={"token": TOKENS["u_successor"]}).status_code == 403
-    assert api.get("/clips/c_missing", headers=EXPERT).status_code == 404
+    assert api.get("/clips/c_missing", headers=SENIOR).status_code == 404
+    assert api.get("/clips/c_7", headers=INTERN).status_code == 200   # backs team memory m_8
+    assert api.get("/clips/c_2", headers=INTERN).status_code == 403   # backs successor-only m_2, m_3, m_9
 
 
 def test_upload_rejects_non_audio(api):
-    sid = api.post("/sessions", json={"expert_id": "u_expert", "memory": False}, headers=EXPERT).json()["session_id"]
-    r = api.post(f"/sessions/{sid}/answer", headers=EXPERT,
+    sid = api.post("/sessions", json={"expert_id": "u_expert", "memory": False}, headers=SENIOR).json()["session_id"]
+    r = api.post(f"/sessions/{sid}/answer", headers=SENIOR,
                  files={"audio": ("x.html", b"<script>alert(1)</script>", "text/html")})
     assert r.status_code == 415, r.text
-    r = api.post(f"/sessions/{sid}/answer", headers=EXPERT,
+    r = api.post(f"/sessions/{sid}/answer", headers=SENIOR,
                  files={"audio": ("x.svg", b"<svg onload=alert(1)>", "image/svg+xml")})
     assert r.status_code == 415
 
 
 def test_interview_session_asks_about_seeded_gap(api):
-    assert api.post("/sessions", json={"expert_id": "u_expert"}, headers=SUCCESSOR).status_code == 403
-    r = api.post("/sessions", json={"expert_id": "u_expert"}, headers=EXPERT)
+    assert api.post("/sessions", json={"expert_id": "u_expert"}, headers=JUNIOR).status_code == 403
+    r = api.post("/sessions", json={"expert_id": "u_expert"}, headers=SENIOR)
     assert r.status_code == 200, r.text
     start = r.json()
     assert set(start) == {"session_id", "first_question_text", "first_question_audio_url"}
@@ -250,10 +262,10 @@ def test_interview_session_asks_about_seeded_gap(api):
     if ANSWER_AUDIO:  # real recording -> ElevenLabs speech to text
         with open(ANSWER_AUDIO, "rb") as f:
             r = api.post(f"/sessions/{start['session_id']}/answer",
-                         files={"audio": ("answer.mp3", f.read(), "audio/mpeg")}, headers=EXPERT)
+                         files={"audio": ("answer.mp3", f.read(), "audio/mpeg")}, headers=SENIOR)
     else:
         r = api.post(f"/sessions/{start['session_id']}/answer", data={"transcript": DANA_ANSWER},
-                     files={"audio": ("answer.webm", b"", "audio/webm")}, headers=EXPERT)
+                     files={"audio": ("answer.webm", b"", "audio/webm")}, headers=SENIOR)
     assert r.status_code == 200, r.text
     body = r.json()
     print("\nanswer response:", {k: v for k, v in body.items() if k != "memories_created"})
@@ -267,12 +279,12 @@ def test_interview_session_asks_about_seeded_gap(api):
         assert_memory(m)
         assert m["session_id"] == start["session_id"]
     assert all(set(g) == GAP_KEYS for g in body["gaps_created"])
-    gaps = {g["id"]: g for g in api.get("/gaps", headers=EXPERT).json()}
+    gaps = {g["id"]: g for g in api.get("/gaps", headers=SENIOR).json()}
     assert gaps["g_1"]["status"] == "answered"
 
 
 def test_interview_memory_off_ignores_gaps(api):
-    r = api.post("/sessions", json={"expert_id": "u_expert", "memory": False}, headers=EXPERT)
+    r = api.post("/sessions", json={"expert_id": "u_expert", "memory": False}, headers=SENIOR)
     assert r.status_code == 200, r.text
     q = r.json()["first_question_text"].lower()
     assert "database" not in q and "zeros" not in q  # no session 1 knowledge
@@ -284,7 +296,7 @@ def test_live_websocket_pushes_changes(api):
 
     url = BASE.replace("http", "ws", 1) + "/live?token=" + TOKENS["u_expert"]
     with connect(url) as ws:
-        api.patch("/memories/m_3/scope", json={"scope": "successor"}, headers=EXPERT)
+        api.patch("/memories/m_3/scope", json={"scope": "team"}, headers=SENIOR)
         seen = set()
         for _ in range(6):
             try:
@@ -294,11 +306,11 @@ def test_live_websocket_pushes_changes(api):
             seen.add(msg["type"])
             if msg["type"] == "memory_changed":
                 assert_memory(msg["memory"])
-                assert msg["memory"]["id"] == "m_3" and msg["memory"]["scope"] == "successor"
+                assert msg["memory"]["id"] == "m_3" and msg["memory"]["scope"] == "team"
             if seen >= {"memory_changed", "runbook_changed"}:
                 break
         assert "memory_changed" in seen
-    api.patch("/memories/m_3/scope", json={"scope": "team"}, headers=EXPERT)
+    api.patch("/memories/m_3/scope", json={"scope": "successor"}, headers=SENIOR)
 
 
 def test_live_websocket_requires_token():

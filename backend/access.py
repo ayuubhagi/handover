@@ -22,7 +22,7 @@ def require_person(user_id: str | None) -> dict:
 
 
 def default_expert_id() -> str:
-    expert = db.col(db.PEOPLE).find_one({"role": "expert"}, sort=[("_id", 1)])
+    expert = db.col(db.PEOPLE).find_one({"role": "senior"}, sort=[("_id", 1)])
     return expert["_id"] if expert else "u_expert"
 
 

@@ -9,7 +9,7 @@ MEMORY_STATUSES = ["active", "corrected", "forgotten"]
 RUNBOOK_STATUSES = ["active", "needs_review", "removed"]
 GAP_KINDS = ["missing", "contradiction"]
 GAP_STATUSES = ["open", "asked", "answered"]
-ROLES = ["expert", "successor", "outsider"]
+ROLES = ["senior", "junior", "intern"]
 
 _str = {"bsonType": "string"}
 _nonempty = {"bsonType": "string", "minLength": 1}

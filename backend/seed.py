@@ -25,9 +25,12 @@ EXPERT = "u_expert"
 SESSION = "s_1"
 
 PEOPLE = [
-    {"_id": "u_expert", "name": "Dana", "role": "expert", "team": "payments-ops", "successor_of": None},
-    {"_id": "u_successor", "name": "Sam", "role": "successor", "team": "payments-ops", "successor_of": "u_expert"},
-    {"_id": "u_outsider", "name": "Riley", "role": "outsider", "team": "retail-marketing", "successor_of": None},
+    # Ids stay u_expert / u_successor / u_outsider so tokens and DEMO_PASSCODES don't change.
+    # Access: Dana (senior) reads everything she owns; Sam (junior, her successor) reads successor + team;
+    # Jordan (intern, same team) reads team only. never_transfer stays with Dana.
+    {"_id": "u_expert", "name": "Dana", "role": "senior", "team": "payments-ops", "successor_of": None},
+    {"_id": "u_successor", "name": "Sam", "role": "junior", "team": "payments-ops", "successor_of": "u_expert"},
+    {"_id": "u_outsider", "name": "Jordan", "role": "intern", "team": "payments-ops", "successor_of": None},
 ]
 
 CLIPS = {
@@ -61,17 +64,17 @@ MEMORIES = [
     ("m_2", "c_2", "procedure", "successor",
      "To push through a payment held by sanctions screening, re-key it on the LoanDesk backup screen. The amount "
      "field there comes pre-filled with zeros: delete them before typing the amount.", None, []),
-    ("m_3", "c_2", "workaround", "team",
+    ("m_3", "c_2", "workaround", "successor",
      "Approvers routinely miss the pre-filled zeros on the LoanDesk backup screen because the screen looks normal. "
      "Do not rely on the approvers to catch it.", None, []),
     ("m_4", "c_3", "client", "never_transfer",
      "Halvorsen Freight has a verbal agreement with treasurer Ingrid: Friday wires up to 2 million are released "
      "without the second approver. It is not documented anywhere.", None, []),
-    ("m_5", "c_4", "system", "successor",
+    ("m_5", "c_4", "system", "team",
      "Never reuse routing flag R7. It used to enable the old auto-release router, and that code still runs on "
      "PAY-08. If R7 is turned on and PAY-08 picks up the job, it releases payments on its own. "
      "PAY-08 is decommissioned at the end of the month.", 21, []),
-    ("m_6", "c_5", "workaround", "successor",
+    ("m_6", "c_5", "workaround", "team",
      "The LedgerOne reconciliation report is wrong on the first business day of each month because of a timezone bug. "
      "Rerun it after 10 a.m. Eastern.", None, []),
     ("m_7", "c_6", "procedure", "successor",
