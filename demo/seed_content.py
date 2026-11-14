@@ -1,5 +1,9 @@
 """Demo content for Handover: what Dana says, what Sam asks, and the seed rows built from it.
 
+Cast: Dana (senior, retiring, owns every memory), Sam (junior, taking over Dana's role, scope "successor"),
+Jordan (intern on the same team, scope "team" only). Scopes: never_transfer = senior only, successor = Sam and Dana,
+team = everyone on the team including Jordan.
+
 Each of Dana's memories is a fictional version of a real failure mode, so we can defend it when judges
 grill us. Real incidents and sources are in demo/RESEARCH.md. The bank (Northgate), its systems
 (LoanDesk, LedgerOne, PAY-08) and its clients are made up.
@@ -40,17 +44,17 @@ MEMORIES = [
     ("m_2", "c_2", "procedure", "successor",
      "To push through a payment held by sanctions screening, re-key it on the LoanDesk backup screen. The amount "
      "field there comes pre-filled with zeros: delete them before typing the amount.", None, []),
-    ("m_3", "c_2", "workaround", "team",
+    ("m_3", "c_2", "workaround", "successor",
      "Approvers routinely miss the pre-filled zeros on the LoanDesk backup screen because the screen looks normal. "
      "Do not rely on the approvers to catch it.", None, []),
     ("m_4", "c_3", "client", "never_transfer",
      "Halvorsen Freight has a verbal agreement with treasurer Ingrid: Friday wires up to 2 million are released "
      "without the second approver. It is not documented anywhere.", None, []),
-    ("m_5", "c_4", "system", "successor",
+    ("m_5", "c_4", "system", "team",
      "Never reuse routing flag R7. It used to enable the old auto-release router, and that code still runs on "
      "PAY-08. If R7 is turned on and PAY-08 picks up the job, it releases payments on its own. "
      "PAY-08 is decommissioned at the end of the month.", 21, []),
-    ("m_6", "c_5", "workaround", "successor",
+    ("m_6", "c_5", "workaround", "team",
      "The LedgerOne reconciliation report is wrong on the first business day of each month because of a timezone bug. "
      "Rerun it after 10 a.m. Eastern.", None, []),
     ("m_7", "c_6", "procedure", "successor",
