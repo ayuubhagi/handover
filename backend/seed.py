@@ -3,6 +3,7 @@
 Wipes the handover collections, recreates validators and indexes, then inserts people, session 1 clips,
 memories (with Voyage embeddings), runbook steps and the open gaps session 2 should ask about.
 Everything here is made up: Northgate Bank, its systems and its clients do not exist.
+Content comes from demo/seed_content.py (each memory is a fictional version of a real incident).
 
 Real expert recordings: drop files named after the clip id into backend/seed_audio/
 (c_1.mp3, c_2.webm, ...). Clips without a file are seeded with a transcript only.
@@ -30,57 +31,66 @@ PEOPLE = [
 ]
 
 CLIPS = {
-    "c_1": "When the overnight payments batch stalls, restart the payments queue before touching the database. "
-           "If you touch the ledger database first you get duplicate postings and a very long morning.",
-    "c_2": "The SWIFT queue backs up most month ends. The alert fires at five thousand messages but honestly "
-           "you don't need to act until it passes eight thousand. Drain it with the swift-drain job on OPS-BATCH-02.",
+    "c_1": "When the overnight payments batch stalls, restart the payments queue before you touch the ledger "
+           "database. If you restart the database first, the batch reloads and every payment in it posts twice. "
+           "Then you spend the whole morning reversing them.",
+    "c_2": "When a payment gets held by sanctions screening and compliance tells you to push it through by hand, "
+           "you re-key it on the LoanDesk backup screen. Almost nobody uses that screen, so nobody remembers this: "
+           "the amount field comes pre-filled with zeros. Delete them before you type the amount. "
+           "The approvers will look right past it, because the screen looks completely normal.",
     "c_3": "Halvorsen Freight is our touchiest client. Their treasurer, Ingrid, has a standing verbal agreement "
-           "that we release their Friday wires up to two million without the second approver. That is not written anywhere.",
-    "c_4": "The reconciliation report from LedgerOne is always wrong on the first business day of the month "
+           "that we release their Friday wires up to two million without the second approver. "
+           "That is not written down anywhere.",
+    "c_4": "Never reuse routing flag R7 for anything new. It used to switch on the old auto-release router. "
+           "That code is dead everywhere except PAY-08, which nobody has switched off yet. If R7 gets turned on "
+           "and PAY-08 picks up the job, it starts releasing payments on its own. PAY-08 is supposed to be "
+           "decommissioned at the end of the month.",
+    "c_5": "The reconciliation report from LedgerOne is always wrong on the first business day of the month, "
            "because of a timezone bug. Rerun it after ten a.m. Eastern and it comes out right.",
-    "c_5": "FaxBridge is the old fax gateway for wire confirmations. It gets switched off at the end of this month, "
-           "so until then, if a confirmation is missing, check the FaxBridge spool folder.",
-    "c_6": "For a stalled batch, actually the first thing I do is check the ledger database locks, "
-           "clear them, and only then worry about the queue.",
-    "c_7": "On call escalation goes to the payments ops duty manager first, then to the vendor hotline for LedgerOne "
-           "if it is still down after thirty minutes.",
+    "c_6": "For a stalled batch, actually, the first thing I do is check the ledger database locks, clear them, "
+           "and only then worry about the queue.",
+    "c_7": "On-call escalation goes to the payments ops duty manager first, then to the LedgerOne vendor hotline "
+           "if it's still down after thirty minutes. The hotline is useless before then.",
 }
 
 # id, clip, kind, scope, text, expires in days (None = default), derived_from
 MEMORIES = [
     ("m_1", "c_1", "procedure", "successor",
      "When the overnight payments batch stalls, restart the payments queue before touching the ledger database. "
-     "Touching the database first causes duplicate postings.", None, []),
-    ("m_2", "c_2", "system", "team",
-     "The SWIFT queue backs up at month end. The alert fires at 5,000 messages but action is only needed above 8,000.",
-     None, []),
-    ("m_3", "c_2", "procedure", "successor",
-     "Drain a backed up SWIFT queue by running the swift-drain job on OPS-BATCH-02.", None, []),
+     "Restarting the database first reloads the batch and every payment posts twice.", None, []),
+    ("m_2", "c_2", "procedure", "successor",
+     "To push through a payment held by sanctions screening, re-key it on the LoanDesk backup screen. The amount "
+     "field there comes pre-filled with zeros: delete them before typing the amount.", None, []),
+    ("m_3", "c_2", "workaround", "team",
+     "Approvers routinely miss the pre-filled zeros on the LoanDesk backup screen because the screen looks normal. "
+     "Do not rely on the approvers to catch it.", None, []),
     ("m_4", "c_3", "client", "never_transfer",
      "Halvorsen Freight has a verbal agreement with treasurer Ingrid: Friday wires up to 2 million are released "
      "without the second approver. It is not documented anywhere.", None, []),
-    ("m_5", "c_4", "workaround", "successor",
+    ("m_5", "c_4", "system", "successor",
+     "Never reuse routing flag R7. It used to enable the old auto-release router, and that code still runs on "
+     "PAY-08. If R7 is turned on and PAY-08 picks up the job, it releases payments on its own. "
+     "PAY-08 is decommissioned at the end of the month.", 21, []),
+    ("m_6", "c_5", "workaround", "successor",
      "The LedgerOne reconciliation report is wrong on the first business day of each month because of a timezone bug. "
      "Rerun it after 10 a.m. Eastern.", None, []),
-    ("m_6", "c_5", "system", "team",
-     "FaxBridge is the legacy fax gateway for wire confirmations and is being retired at the end of the month. "
-     "Until then, look for missing confirmations in the FaxBridge spool folder.", 21, []),
     ("m_7", "c_6", "procedure", "successor",
      "For a stalled payments batch, first check and clear the ledger database locks, then deal with the queue.",
      None, []),
     ("m_8", "c_7", "procedure", "team",
-     "On call escalation: payments ops duty manager first, then the LedgerOne vendor hotline if the outage "
+     "On-call escalation: payments ops duty manager first, then the LedgerOne vendor hotline if the outage "
      "lasts more than 30 minutes.", None, []),
     ("m_9", "c_2", "procedure", "successor",
-     "Month end SWIFT playbook: ignore the 5,000 message alert, act above 8,000, and drain the queue with "
-     "swift-drain on OPS-BATCH-02.", None, ["m_2", "m_3"]),
+     "Backup screen checklist: delete the pre-filled zeros in the amount field, type the amount, and check it "
+     "yourself before approval. The approvers will not catch it.", None, ["m_2", "m_3"]),
 ]
 
 RUNBOOK = [
     ("r_1", "Stalled overnight batch: restart the payments queue before touching the ledger database.", ["m_1"]),
-    ("r_2", "Month end: when the SWIFT queue passes 8,000 messages, run swift-drain on OPS-BATCH-02.", ["m_9"]),
-    ("r_3", "First business day of the month: rerun the LedgerOne reconciliation report after 10 a.m. Eastern.", ["m_5"]),
-    ("r_4", "Missing wire confirmation: check the FaxBridge spool folder.", ["m_6"]),
+    ("r_2", "Re-keying a held payment on the LoanDesk backup screen: delete the pre-filled zeros in the amount field "
+            "and check the amount yourself before approval.", ["m_9"]),
+    ("r_3", "First business day of the month: rerun the LedgerOne reconciliation report after 10 a.m. Eastern.", ["m_6"]),
+    ("r_4", "Routing flags: never reuse R7 while PAY-08 is still running.", ["m_5"]),
     ("r_5", "Outage over 30 minutes: escalate to the duty manager, then the LedgerOne vendor hotline.", ["m_8"]),
     ("r_6", "Friday wires for Halvorsen Freight: follow the release arrangement agreed with their treasurer.", ["m_4"]),
 ]
@@ -90,8 +100,8 @@ GAPS = [
      "You told me to restart the payments queue before touching the ledger database, but you also said you clear "
      "the database locks first. Which one comes first when the batch stalls?", ["m_1", "m_7"]),
     ("g_2", "missing",
-     "You mentioned the swift-drain job on OPS-BATCH-02. Who has access to run it, and what do you do if it fails?",
-     ["m_3"]),
+     "You said the backup screen pre-fills the amount field with zeros. Is there any way to catch a wrong amount "
+     "before the payment actually posts?", ["m_2"]),
 ]
 
 RESET = [db.PEOPLE, db.CLIPS, db.MEMORIES, db.RUNBOOK, db.GAPS, db.AUDIT, db.SESSIONS,
