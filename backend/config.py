@@ -23,7 +23,7 @@ class Settings:
     EMBED_DIMS = int(_get("EMBED_DIMS", "1024"))
 
     GOOGLE_API_KEY = _get("GOOGLE_API_KEY")
-    GEMINI_MODEL = _get("GEMINI_MODEL", "gemini-flash-latest")
+    GEMINI_MODEL = _get("GEMINI_MODEL", "gemini-3.5-flash")
 
     ELEVENLABS_API_KEY = _get("ELEVENLABS_API_KEY")
     ELEVENLABS_VOICE_ID = _get("ELEVENLABS_VOICE_ID", "JBFqnCBsd6RMkjVDRZzb")

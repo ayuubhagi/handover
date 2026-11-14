@@ -20,6 +20,22 @@ MEMORY_KEYS = {"id", "owner_id", "kind", "text", "scope", "status", "version", "
                "source_clip_id", "session_id", "created_at", "expires_at"}
 GAP_KEYS = {"id", "question", "kind", "from_memory_ids", "status"}
 
+# Set HANDOVER_ANSWER_AUDIO to a recording of Dana's answer to g_1 to exercise speech to text.
+ANSWER_AUDIO = os.getenv("HANDOVER_ANSWER_AUDIO")
+DANA_ANSWER = ("Good catch. Clear the database locks first, but never restart the database. Clearing locks is safe. "
+               "Restarting the database is what reloads the batch and causes the duplicates. "
+               "So: clear the locks, then restart the queue.")
+# Set HANDOVER_EXPECT_AUDIO=1 when ElevenLabs is configured: interviewer audio urls must then be present.
+EXPECT_AUDIO = os.getenv("HANDOVER_EXPECT_AUDIO") == "1"
+
+
+def assert_audio(api, url):
+    if url is None:
+        assert not EXPECT_AUDIO, "interviewer audio missing"
+        return
+    r = api.get(url, headers=EXPERT)
+    assert r.status_code == 200 and r.headers["content-type"] == "audio/mpeg" and len(r.content) > 1000
+
 
 @pytest.fixture(scope="module")
 def api():
@@ -52,7 +68,7 @@ def test_memories_scoped_per_viewer(api):
 
 
 def test_ask_successor_gets_sources(api):
-    r = api.post("/ask", json={"question": "What do I do when the SWIFT queue backs up?", "memory": True},
+    r = api.post("/ask", json={"question": "A payment is stuck in sanctions screening and compliance says to push it through by hand. How do I do that?", "memory": True},
                  headers=SUCCESSOR)
     assert r.status_code == 200, r.text
     body = r.json()
@@ -63,7 +79,7 @@ def test_ask_successor_gets_sources(api):
         assert_memory(s["memory"])
         assert s["memory"]["scope"] != "never_transfer"
         assert s["clip_url"].endswith("/clips/" + s["memory"]["source_clip_id"])
-    assert {"m_2", "m_3", "m_9"} & {s["memory"]["id"] for s in body["sources"]}
+    assert {"m_2", "m_9"} & {s["memory"]["id"] for s in body["sources"]}
 
 
 def test_ask_never_transfer_stays_private(api):
@@ -76,7 +92,7 @@ def test_ask_never_transfer_stays_private(api):
 
 
 def test_ask_outsider_blocked_and_audited(api):
-    r = api.post("/ask", json={"question": "What do I do when the SWIFT queue backs up?", "memory": True},
+    r = api.post("/ask", json={"question": "A payment is stuck in sanctions screening and compliance says to push it through by hand. How do I do that?", "memory": True},
                  headers=OUTSIDER).json()
     assert r["sources"] == [] and r["blocked_count"] >= 1
     audit = api.get("/audit", params={"limit": 50}, headers=EXPERT).json()
@@ -85,7 +101,7 @@ def test_ask_outsider_blocked_and_audited(api):
 
 
 def test_ask_memory_off(api):
-    r = api.post("/ask", json={"question": "What do I do when the SWIFT queue backs up?", "memory": False},
+    r = api.post("/ask", json={"question": "A payment is stuck in sanctions screening and compliance says to push it through by hand. How do I do that?", "memory": False},
                  headers=SUCCESSOR).json()
     assert r["sources"] == [] and r["blocked_count"] == 0 and r["answer_text"]
 
@@ -126,43 +142,47 @@ def test_scope_change_hides_and_restores(api):
 
 
 def test_correct_versions_memory(api):
-    r = api.post("/memories/m_5/correct",
+    r = api.post("/memories/m_6/correct",
                  json={"text": "Rerun the LedgerOne reconciliation report after 11 a.m. Eastern on the first business day."},
                  headers=EXPERT)
     assert r.status_code == 200, r.text
     old, new = r.json()["old"], r.json()["new"]
     assert_memory(old), assert_memory(new)
-    assert old["id"] == "m_5" and old["status"] == "corrected"
-    assert new["status"] == "active" and new["version"] == 2 and new["supersedes"] == "m_5"
+    assert old["id"] == "m_6" and old["status"] == "corrected"
+    assert new["status"] == "active" and new["version"] == 2 and new["supersedes"] == "m_6"
     step = next(s for s in api.get("/runbook", headers=EXPERT).json() if s["id"] == "r_3")
     assert step["derived_from"] == [new["id"]] and step["status"] == "needs_review"
     succ_ids = {m["id"] for m in api.get("/memories", headers=SUCCESSOR).json()}
-    assert new["id"] in succ_ids and "m_5" not in succ_ids
+    assert new["id"] in succ_ids and "m_6" not in succ_ids
 
 
 def test_forget_cascades(api):
-    r = api.post("/memories/m_3/forget", headers=EXPERT)
+    r = api.post("/memories/m_2/forget", headers=EXPERT)
     assert r.status_code == 200, r.text
     body = r.json()
     assert set(body) == {"forgotten_ids", "runbook_steps_removed", "audit_id"}
-    assert {"m_3", "m_9"} <= set(body["forgotten_ids"])  # m_9 was derived from m_3
+    assert {"m_2", "m_9"} <= set(body["forgotten_ids"])  # m_9 was derived from m_2
+    assert "m_3" not in body["forgotten_ids"]            # a sibling source survives
     assert "r_2" in body["runbook_steps_removed"]         # r_2 was built from m_9
     assert "r_2" not in {s["id"] for s in api.get("/runbook", headers=EXPERT).json()}
     mems = {m["id"]: m for m in api.get("/memories", headers=EXPERT).json()}
-    assert mems["m_3"]["status"] == "forgotten" and "swift-drain" not in mems["m_3"]["text"]
+    assert mems["m_2"]["status"] == "forgotten" and "zeros" not in mems["m_2"]["text"]
+    assert mems["m_3"]["status"] == "active"
     assert "g_2" not in {g["id"] for g in api.get("/gaps", headers=EXPERT).json()}
     audit = api.get("/audit", params={"limit": 10}, headers=EXPERT).json()
-    assert any(a["action"] == "forget" and "m_3" in a["memory_ids"] for a in audit)
-    again = api.post("/ask", json={"question": "How do I drain the SWIFT queue with swift-drain?", "memory": True},
+    assert any(a["action"] == "forget" and "m_2" in a["memory_ids"] for a in audit)
+    again = api.post("/ask", json={"question": "How do I re-key a held payment on the LoanDesk backup screen?", "memory": True},
                      headers=SUCCESSOR).json()
-    assert not {"m_3", "m_9"} & {s["memory"]["id"] for s in again["sources"]}
+    assert not {"m_2", "m_9"} & {s["memory"]["id"] for s in again["sources"]}
 
 
 def test_clip_access(api):
     r = api.get("/clips/c_3", headers=OUTSIDER)
     assert r.status_code == 403
     assert api.get("/clips/c_3", headers=SUCCESSOR).status_code == 403  # only backs a never_transfer memory
-    assert api.get("/clips/c_1", headers=SUCCESSOR).status_code in (200, 404)  # 404 until a recording is seeded
+    r = api.get("/clips/c_1", headers=SUCCESSOR)
+    assert r.status_code == 200 and r.headers["content-type"].startswith("audio/") and len(r.content) > 10_000
+    assert api.get("/clips/c_1", params={"user_id": "u_successor"}).status_code == 200  # <audio src> fallback
     assert api.get("/clips/c_missing", headers=EXPERT).status_code == 404
 
 
@@ -173,16 +193,23 @@ def test_interview_session_asks_about_seeded_gap(api):
     start = r.json()
     assert set(start) == {"session_id", "first_question_text", "first_question_audio_url"}
     assert "database" in start["first_question_text"].lower()  # g_1, the contradiction from session 1
+    assert_audio(api, start["first_question_audio_url"])
 
-    answer = ("The queue comes first, always. Restart the payments queue, then clear the ledger database locks. "
-              "Also, the swift-drain job needs the OPS-BATCH service account and the password is in the team vault.")
-    r = api.post(f"/sessions/{start['session_id']}/answer", data={"transcript": answer},
-                 files={"audio": ("answer.webm", b"", "audio/webm")}, headers=EXPERT)
+    if ANSWER_AUDIO:  # real recording -> ElevenLabs speech to text
+        with open(ANSWER_AUDIO, "rb") as f:
+            r = api.post(f"/sessions/{start['session_id']}/answer",
+                         files={"audio": ("answer.mp3", f.read(), "audio/mpeg")}, headers=EXPERT)
+    else:
+        r = api.post(f"/sessions/{start['session_id']}/answer", data={"transcript": DANA_ANSWER},
+                     files={"audio": ("answer.webm", b"", "audio/webm")}, headers=EXPERT)
     assert r.status_code == 200, r.text
     body = r.json()
+    print("\nanswer response:", {k: v for k, v in body.items() if k != "memories_created"})
+    print("memories created:", [m["kind"] + "/" + m["scope"] + ": " + m["text"] for m in body["memories_created"]])
     assert set(body) == {"transcript", "memories_created", "gaps_created", "next_question_text",
                          "next_question_audio_url", "used_memory_ids"}
-    assert body["transcript"] == answer and body["next_question_text"]
+    assert "lock" in body["transcript"].lower() and body["next_question_text"]
+    assert_audio(api, body["next_question_audio_url"])
     assert body["memories_created"]
     for m in body["memories_created"]:
         assert_memory(m)
@@ -192,13 +219,20 @@ def test_interview_session_asks_about_seeded_gap(api):
     assert gaps["g_1"]["status"] == "answered"
 
 
+def test_interview_memory_off_ignores_gaps(api):
+    r = api.post("/sessions", json={"expert_id": "u_expert", "memory": False}, headers=EXPERT)
+    assert r.status_code == 200, r.text
+    q = r.json()["first_question_text"].lower()
+    assert "database" not in q and "zeros" not in q  # no session 1 knowledge
+
+
 def test_live_websocket_pushes_changes(api):
     from websockets.sync.client import connect
     import json
 
     url = BASE.replace("http", "ws", 1) + "/live?user_id=u_expert"
     with connect(url) as ws:
-        api.patch("/memories/m_2/scope", json={"scope": "successor"}, headers=EXPERT)
+        api.patch("/memories/m_3/scope", json={"scope": "successor"}, headers=EXPERT)
         seen = set()
         for _ in range(6):
             try:
@@ -208,8 +242,8 @@ def test_live_websocket_pushes_changes(api):
             seen.add(msg["type"])
             if msg["type"] == "memory_changed":
                 assert_memory(msg["memory"])
-                assert msg["memory"]["id"] == "m_2" and msg["memory"]["scope"] == "successor"
+                assert msg["memory"]["id"] == "m_3" and msg["memory"]["scope"] == "successor"
             if seen >= {"memory_changed", "runbook_changed"}:
                 break
         assert "memory_changed" in seen
-    api.patch("/memories/m_2/scope", json={"scope": "team"}, headers=EXPERT)
+    api.patch("/memories/m_3/scope", json={"scope": "team"}, headers=EXPERT)

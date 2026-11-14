@@ -157,7 +157,11 @@ def detect(state: State) -> dict:
     if state.get("memory_on") and new_ids:
         new_docs = list(db.col(db.MEMORIES).find({"_id": {"$in": new_ids}}))
         found = detection.detect_gaps(new_docs, _related(new_docs, expert), state.get("transcript", ""))
-        gaps = [models.build_gap(expert, g["question"], g["kind"], g["from_memory_ids"], session_id=sid) for g in found]
+        # This answer resolves the gap that was just asked: don't re-raise a contradiction about the same memories.
+        answered = db.col(db.GAPS).find_one({"_id": state["current_gap_id"]}) if state.get("current_gap_id") else None
+        resolved = set(answered["from_memory_ids"]) if answered else set()
+        found = [g for g in found if not (g["kind"] == "contradiction" and resolved & set(g["from_memory_ids"]))]
+        gaps =[models.build_gap(expert, g["question"], g["kind"], g["from_memory_ids"], session_id=sid) for g in found]
         if gaps:
             db.col(db.GAPS).insert_many(gaps)
         gap_ids = [g["_id"] for g in gaps]

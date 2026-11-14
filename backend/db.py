@@ -15,8 +15,13 @@ from pymongo.write_concern import WriteConcern
 
 import schemas
 from config import settings
+from errors import HandoverError
 
 log = logging.getLogger("handover.db")
+
+
+class DatabaseUnavailable(HandoverError):
+    status_code = 503
 
 PEOPLE = "people"
 CLIPS = "clips"
@@ -36,7 +41,7 @@ def get_client() -> MongoClient:
     global _client
     if _client is None:
         if not settings.MONGODB_URI:
-            raise RuntimeError("MONGODB_URI is not set. Copy .env.example to .env and add the Atlas connection string.")
+            raise DatabaseUnavailable("MONGODB_URI is not set. Copy .env.example to .env and add the Atlas connection string.")
         _client = MongoClient(
             settings.MONGODB_URI,
             appname="handover-backend",
