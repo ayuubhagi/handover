@@ -1,61 +1,96 @@
-# Ask Grandpa: Governed Memory Engine
+# Handover: Governed Memory Engine
 
-Track 2: Memory You Can Govern. Ask Grandpa is the demo. The real product is a governed memory engine: the person a memory is about controls who sees it, how long it lives, and how it gets corrected or forgotten. Swap grandpa for a client, a patient, or a customer and the engine is the same.
+Track 2: Memory You Can Govern.
 
-## Pitch
-Agents remember everything, but nobody governs it. Every memory here has an owner, a scope, and a lifespan, and we prove it changes what the agent does next.
+Handover is a voice agent that runs exit interviews with a senior employee across their last few weeks and remembers what they know. The expert controls that memory: who inherits each piece, how long it lives, and whether it gets corrected or forgotten. Their successor asks questions and hears the expert's real recorded answers.
 
-## Judge questions
-1. No leaking: Vector Search filters by the asker's identity inside the query.
-2. Fix or forget: correct keeps history; forget cascades to embeddings, summaries, and gaps. TTL for expiry.
-3. Proof: same session with memory on vs off asks different questions. LangSmith traces show which memory drove each decision.
+Demo: a retiring bank operations lead. Product: a governed memory engine for any knowledge that would otherwise leave with someone.
 
-## Stack
-Atlas Sandbox, Vector Search, schema validation, TTL index, change streams, LangGraph + LangSmith, ElevenLabs (speech-to-text and voice), Gemini.
+## What makes it different (say this to judges)
+1. The agent hunts for what's missing: it finds gaps and contradictions across sessions and asks about them.
+2. Memory is inherited: ownership moves from expert to successor, with scopes (successor, team, never_transfer).
+3. Forget cascades: removing a memory updates the runbook steps built from it, live.
+4. Only the interviewer voice is synthesized. The expert's voice is always a real recording.
+
+## MongoDB features (use all of these, deliberately)
+- Atlas Sandbox cluster (required for finalists)
+- $jsonSchema validation: every memory needs owner, scope, expires_at, source_clip_id
+- Atlas Vector Search with pre-filter on scope, owner, status (leak prevention happens in the query)
+- Voyage AI embeddings (MongoDB owned), voyage-3 family
+- Hybrid search: Atlas Search (keyword, for system names like "SWIFT queue") + Vector Search, combined with $rankFusion
+- TTL index on expires_at (memories about retired systems expire)
+- Change streams: push hide/forget/correct to the successor UI live, and drive the cascade worker
+- $graphLookup over derived_from: find everything built from a memory, for cascade forget and for "why does the agent know this"
+- Multi-document transaction: forget + cascade + audit entry commit together
+- LangGraph MongoDBSaver checkpointer: interview state survives restarts
+- audit_log collection: every read and governance action, who and why
+- Dev: MongoDB MCP Server + MongoDB Agent Skills in Claude Code
 
 ## Collections
-- people: id, name, role, relationship
-- memories: id, owner_id, type, text, embedding, audience, source_clip_id, session_id, created_at, expires_at, status, derived_from
-- clips: id, owner_id, audio_url, transcript, session_id
-- gaps: id, owner_id, question, from_memory_ids, status
-- audit_log: id, actor_id, action, memory_id, allowed, reason, timestamp
+- people: name, role (expert, successor, outsider)
+- clips: owner_id, audio_url, transcript, session_id
+- memories: owner_id, kind (procedure, system, client, workaround), text, embedding, scope, status (active, corrected, forgotten), version, supersedes, derived_from, source_clip_id, session_id, created_at, expires_at
+- runbook_steps: text, derived_from (memory ids), status
+- gaps: owner_id, question, from_memory_ids, kind (missing, contradiction), status
+- audit_log: actor_id, action, memory_ids, allowed, reason, ts
 
 ## Team
-- Ayuub: backend, Atlas, Vector Search, agent loop, governance
-- Teammate 2: frontend, elder view and family view
-- Teammate 3: demo data, sample sessions, pitch, 1 minute video, README
+- Ayuub: backend, Atlas, memory engine, agent loop
+- Teammate 2: frontend (expert view, successor view, live updates, memory on vs off)
+- Teammate 3: demo script, recorded expert sessions, pitch, 1 minute video, README
 
-## Must haves (by 1:00 end to end)
-1. Session 2 asks a follow-up from session 1
-2. Family ask plays the real clip
-3. Hide and forget work live
+## Must haves
+1. Session 2 asks a contradiction/gap follow-up from session 1
+2. Successor asks, gets scope-filtered answer + real clip; outsider gets blocked
+3. Expert forgets a memory: runbook step disappears live, audit entry shows
+4. Memory on vs off side by side
 
-## Rules
-Public repo. All code written during the event. Never commit .env.
+## Times
+Code freeze 4:00. Submissions due 5:00 PM. Judging 5:15. Top 6 at 7:00.
 
-## Full split (3 people)
+## Compliance checklist (from the official resource guide + participant guide)
 
-### Person 1: Ayuub (backend + memory engine)
-- 10:30-11:30: FastAPI app, Atlas connection, collections with schema validation, Vector Search index (filters: owner_id, audience, status), TTL index on expires_at
-- 11:30-12:30: Endpoints: POST /session/{id}/answer (audio in, transcribe with ElevenLabs, extract stories with Gemini, embed, save), GET /family/ask?asker=&q= (permission-filtered vector search, returns clips)
-- 12:30-1:30: Agent loop in LangGraph: load open gaps, pick next question, detect contradictions, create gaps; LangSmith tracing on
-- 1:30-3:00: Governance: PATCH /memory/{id}/audience, POST /memory/{id}/correct, POST /memory/{id}/forget (cascade), audit_log, change stream to push updates
-- 3:00-4:00: Memory on vs off comparison endpoint, bug fixes, help connect frontend
+### Problem Statement 2: Memory You Can Govern
+- [ ] Atlas + Vector Search persist and retrieve memory
+- [ ] Memory changes what the agent does on the next run (session 2 asks about session 1 gaps; memory on vs off demo)
+- [ ] Rules for who can read each memory (scope pre-filter: successor / team / never_transfer)
+- [ ] Rules for how long it lives (expires_at + TTL index)
+- [ ] Rules for how it gets corrected (versioned correct, supersedes link) or forgotten (cascade via $graphLookup, in a transaction)
+- [ ] Q1 leakage: outsider and successor see different results for the same question, enforced in the query, logged in audit_log
+- [ ] Q2 wrong/expired: show a correction and an expiry live
+- [ ] Q3 proof: memory on vs off side by side + LangSmith trace naming the memory ids that drove the decision
+- [ ] Atlas is the data, memory AND state layer (LangGraph MongoDBSaver checkpointer for interview state)
 
-### Person 2: Frontend
-- 10:30-12:00: React (Vite) app with mock API. Elder view: record button, agent reply text + audio. Family view: choose asker (grandkid or cousin), question box, results with audio + transcript
-- 12:00-1:30: Story list for elder: Family/Private toggle, Correct, Forget buttons. Audit log panel
-- 1:30-3:00: Swap mocks for real endpoints, live updates when a story is hidden or forgotten
-- 3:00-4:00: Memory on vs off side-by-side screen, polish, make demo flow smooth
+### Hackathon requirements
+- [ ] Project + cluster created through the Atlas Sandbox invite (Agents in Context Toronto org). Not a personal cluster.
+- [ ] All work original, written today (commit history starts today)
+- [ ] Repo public (done) and demo link accessible
+- [ ] Team of 4 or fewer
+- [ ] Live, in-person demo works on our laptop with venue wifi (have a recorded backup)
 
-### Person 3: Demo + data
-- 10:30-11:30: Write and record 3 fake grandpa sessions (~1 min each). Session 1: brother moved away in 1979, no reason given. Session 2: a year that contradicts session 1. Session 3: one private story cousins shouldn't hear. Type exact transcripts
-- 11:30-1:00: Draft 3-minute pitch: hook, memory demo, governance demo, "grandpa is the demo, the product is a governed memory engine"
-- 1:00-3:00: README (what it is, architecture, how to run, sponsor tools used), test the app as a user and report bugs
-- 3:00-4:30: Record 1-minute submission video, run the pitch 3+ times with the team, prep 5 likely judge Q&A answers
+### Submission (Cerebral Valley platform, due 5:00 PM)
+- [ ] Public GitHub repo link
+- [ ] 1-minute demo video showing code AND functionality built today, with audio checked
+- [ ] Concise project description
+- [ ] All teammates added to the submission
 
-### Checkpoints
-- 12:30: backend endpoints return real data
-- 1:30: one full flow works end to end
-- 3:00: governance working live
-- 4:00: code freeze, then demo practice and submission
+### Rules / disqualification risks
+- [ ] Demo only shows what we built today
+- [ ] No code, data or assets we don't have rights to. Use fake bank data only. Record teammates (with consent) as the expert. Never clone a real person's voice.
+- [ ] Not on the anti-project list: not basic RAG (lead with governance + agent loop), no Streamlit (we use React), dashboard is not the main feature, no medical advice
+
+### Judging (Round 1: Demo 35, Difficulty 30, Creativity 15, Impact 20. ~3 min demo + 1-2 min Q&A)
+- [ ] Demo 35: one clean live flow, rehearsed 3+ times, backup video ready
+- [ ] Difficulty 30: show the hard parts on screen (pre-filtered vector search, hybrid $rankFusion, $graphLookup cascade, transaction, change stream, checkpointer)
+- [ ] Creativity 15: agent hunts gaps and contradictions; memory is inherited, not just stored
+- [ ] Impact 20: knowledge loss when senior staff leave; works for banks, on-call, plant operators
+- [ ] Round 2 (top 6, 7:00 PM): same criteria, equal weight, 3 min + 2 min Q&A
+
+### Bonus prizes
+- [ ] ElevenLabs: speech to text + interviewer voice (Best Project Built with ElevenLabs)
+- [ ] LangSmith traces visible in demo
+
+### Recommended setup from the guide
+- [ ] MongoDB Agent Skills installed in Claude Code
+- [ ] MongoDB MCP Server connected
+- [ ] Voyage AI key (200M free tokens) or Automated Embeddings
