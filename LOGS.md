@@ -4,11 +4,13 @@ Every person and every AI assistant or subagent appends here: what got done, com
 Append only, newest at the bottom. Format: `[HH:MM] Name (agent/human): entry`. Use the tags **DONE / ISSUE / CONFLICT / PR / BLOCKED**.
 
 ## Open issues and conflicts (edit this list, keep it short)
-- CONFLICT: TEAM.md says React (Vite) for /frontend, but a Next.js app is scaffolded at the root (src/). The frontend was built as Next.js in /frontend. Is the root src/ dead code? (Harsh)
-- ISSUE: there's no `.env` locally, so the backend can't reach Atlas, Gemini, Voyage or ElevenLabs on Harsh's machine. Keys need to be shared privately, never committed. (Harsh)
-- ISSUE: root tsconfig and eslint scan /frontend. See TEAM.md Requests. (Harsh)
-- ISSUE (security scan, backend/routes.py, Ayuub): X-User-Id / ?user_id= is self-asserted, so anyone can impersonate u_expert; uploaded audio content_type isn't allowlisted, which is an XSS risk. Fix: allowlist audio MIME types + nosniff.
-- ISSUE: backend needs MONGODB_URI to serve anything but /health; unhandled RuntimeError returns a 500 without CORS headers, which the browser reports as a network error. (Harsh)
+- RESOLVED (Ayuub): root Next.js scaffold (src/, public/, package.json, tsconfig.json, eslint.config.mjs, next.config.ts) deleted, so root lint no longer scans /frontend.
+- RESOLVED (Ayuub): identity is now a signed token from POST /login; X-User-Id / ?user_id= are ignored. Audio uploads are allowlisted (415 otherwise), and clips are served with nosniff.
+- RESOLVED (Ayuub): every error, including a missing MONGODB_URI (503), is JSON with CORS headers.
+- RESOLVED (Ayuub): the Gemini default is now gemini-3.5-flash, with automatic fallback to other models when the free-tier quota (20 requests per day per model) runs out.
+- ISSUE (team): everyone testing against the shared `handover` database overwrote each other's data (one seed wiped another person's sessions). Use your own MONGODB_DB; see Setup for teammates in TEAM.md.
+- ISSUE (frontend, Harsh): must switch to POST /login + Bearer token (TEAM.md Requests 14:10). After a failed answer the composer stays disabled. Successor/outsider should default to Ask mode.
+- ISSUE (keys): the Gemini key is on the free tier, so heavy rehearsal can exhaust every model. Add billing to the Google project before the demo.
 
 ## Log
 [12:06] Harsh (subagent): DONE: Next.js frontend in /frontend. Typed client for every TEAM.md endpoint, mock mode (NEXT_PUBLIC_USE_MOCKS), WS /live reconnect, and the /expert, /successor, /compare and /audit screens. Build and lint clean. Commits 641b1cd, 9426a9b, 4466720, c5ee005.
@@ -35,3 +37,8 @@ Append only, newest at the bottom. Format: `[HH:MM] Name (agent/human): entry`. 
 [13:58] Keith (agent): DONE (works live, checked via API): /ask as successor returns Dana's m_3 memory and sources; outsider gets blocked_count 1 and no sources; memory:false says "I have no memory of this"; all three are written to /audit. /runbook returns steps. /clips/c_2 returns audio/mpeg for the successor and 403 for the outsider. Ask works even with Voyage down, so retrieval seems to fall back to keyword search.
 [13:58] Keith (agent): DONE: GET /gaps returns g_1 (the contradiction) for u_expert and [] for u_successor, which looks correct.
 [13:58] Keith (agent): NOT TESTED: forget/correct/scope change (I didn't want to change the shared Atlas demo data without asking), the Ask UI end to end, and mic/call (Playwright kept dropping the page; a second app was also running on :3000). Next: get a working Voyage key, then re-run the interview -> gap -> forget-cascade flow.
+[14:17] Ayuub (agent): DONE: token auth (POST /login + HMAC Bearer tokens on every route, ?token= for /clips and /live), audio MIME allowlist + nosniff, JSON errors with CORS (503 for config), contract extensions in TEAM.md, root Next.js scaffold removed. Commits 18bae73, 3ef133c, 959e89e.
+[14:17] Ayuub (agent): DONE: Keith's seed swapped in (identical to demo/seed_content.py), real clips loaded, all 6 demo beats a-f PASS, contract tests 20/20 against real Gemini, Voyage, ElevenLabs and LangSmith. Commits bee9cea, 3098746, bbd41ad.
+[14:17] Ayuub (agent): ISSUE fixed: a reseed while any backend was running made the change stream treat the deleted memories as TTL expiries and wipe the new gaps and runbook. cascade_expired now skips ids that exist again, and seed drops collections instead of deleting documents. Pull before running the backend. Commit 3098746.
+[14:17] Ayuub (agent): DONE: Mermaid diagrams in backend/ARCHITECTURE.md (system, interview loop, ask, forget cascade). Commit 9b46359.
+[14:17] Ayuub (agent): SETUP for Harsh's and Keith's agents: read "Setup for teammates" in TEAM.md. .env from the team chat at the repo root (never commit it); add MONGODB_DB=handover_harsh or handover_keith; run python seed.py once from backend/ into that private database; never seed the default `handover` (demo only); log in with POST /login using the DEMO_PASSCODES users and send the Bearer token.
