@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Runbook } from "../../components/Runbook";
-import { AUDIENCE, ErrorNote, Loading } from "../../components/ui";
+import { AUDIENCE, ErrorNote, Loading, ScopeIcon } from "../../components/ui";
 import { api, errorMessage } from "../../lib/api";
 import { useLive, useLoad, useUserId } from "../../lib/hooks";
 import type { Memory, MemoryScope } from "../../lib/types";
@@ -94,8 +94,9 @@ function Item({ m, canEdit, onDone }: { m: Memory; canEdit: boolean; onDone: () 
                   title={a.tip}
                   disabled={busy}
                   onClick={() => m.scope !== a.value && run(() => api.setScope(m.id, a.value as MemoryScope))}
-                  className={`rounded-full px-2.5 py-1 font-medium transition ${m.scope === a.value ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"}`}
+                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-medium transition ${m.scope === a.value ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"}`}
                 >
+                  <ScopeIcon scope={a.value} />
                   {a.label}
                 </button>
               ))}

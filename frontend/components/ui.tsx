@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../lib/api";
 import type { Memory, MemoryScope } from "../lib/types";
-import { IconPause, IconPlay } from "./icons";
+import { IconKey, IconLock, IconPause, IconPlay, IconUsers } from "./icons";
 
 export function Card({ title, aside, children, className = "" }: { title?: React.ReactNode; aside?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
@@ -59,7 +59,7 @@ const SCOPE_STYLE: Record<string, string> = {
 
 export function Tag({ children, tone = "neutral" }: { children: React.ReactNode; tone?: string }) {
   const cls = SCOPE_STYLE[tone] ?? "bg-bg text-muted border border-line";
-  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}>{children}</span>;
+  return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}>{children}</span>;
 }
 
 /** Technical metadata row (Under the hood only). */
@@ -68,7 +68,10 @@ export function MemoryMeta({ m }: { m: Memory }) {
     <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted">
       <Tag>{m.kind}</Tag>
       <span title={audienceTip(m.scope)}>
-        <Tag tone={m.scope}>{audienceLabel(m.scope)}</Tag>
+        <Tag tone={m.scope}>
+          <ScopeIcon scope={m.scope} />
+          {audienceLabel(m.scope)}
+        </Tag>
       </span>
       <span>v{m.version}</span>
       <span className="font-mono">{m.id}</span>
@@ -81,17 +84,17 @@ export function MemoryMeta({ m }: { m: Memory }) {
 export const AUDIENCE: { value: MemoryScope; label: string; tip: string }[] = [
   {
     value: "never_transfer",
-    label: "🔒 Senior only",
+    label: "Senior only",
     tip: "Client-confidential. Privacy and bank confidentiality rules say nobody else gets it, not even the successor.",
   },
   {
     value: "successor",
-    label: "🟠 Successor",
+    label: "Successor",
     tip: "Authority and override knowledge, like moving money around a control. Only the person accountable for the role gets it.",
   },
   {
     value: "team",
-    label: "🟢 Everyone on the team",
+    label: "Everyone on the team",
     tip: "General know-how. Safe, and it helps the intern learn.",
   },
 ];
@@ -151,4 +154,11 @@ export function PlayButton({ url, text, label, autoPlay = false }: { url: string
       {playing ? "Stop" : label}
     </button>
   );
+}
+
+/** Icon for an access level: lock (senior only), key (successor), people (team). */
+export function ScopeIcon({ scope, className = "h-3 w-3" }: { scope: MemoryScope; className?: string }) {
+  if (scope === "never_transfer") return <IconLock className={className} />;
+  if (scope === "successor") return <IconKey className={className} />;
+  return <IconUsers className={className} />;
 }

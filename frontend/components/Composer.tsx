@@ -36,7 +36,8 @@ export function Composer({
   placeholder: string;
   disabled?: boolean;
   mode: Mode;
-  onMode: (m: Mode) => void;
+  /** Omit to hide the mode switch (ask-only viewers). */
+  onMode?: (m: Mode) => void;
   onSend: (text: string) => void;
   recording?: boolean;
   level?: number;
@@ -96,7 +97,7 @@ export function Composer({
         )}
       </div>
       <div className="flex items-center gap-1 px-2 pb-2 pt-1">
-        <Menu label="Mode" value={mode} onChange={onMode} options={MODES} placement="top-start" />
+        {onMode && <Menu label="Mode" value={mode} onChange={onMode} options={MODES} placement="top-start" />}
         <div className="ml-auto flex items-center gap-1">
           {onCall && !recording && (
             <button
