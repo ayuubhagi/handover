@@ -1,0 +1,67 @@
+- generic [ref=e1]:
+  - 'button "Viewing as: Dana · Senior payments officer, retiring" [ref=e4]':
+    - generic [ref=e5]: Dana · Senior payments officer, retiring
+  - generic [ref=e10]:
+    - complementary [ref=e11]:
+      - link "Handover Northgate Bank" [ref=e13] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e18]:
+          - text: Handover
+          - generic [ref=e19]: Northgate Bank
+      - button "New chat" [ref=e21]
+      - navigation [ref=e24]:
+        - generic [ref=e476]:
+          - paragraph [ref=e477]: Today
+          - list [ref=e478]:
+            - listitem [ref=e479]:
+              - button "Preventing wrong payment amounts" [ref=e480]
+            - listitem [ref=e483]:
+              - button "Friday database maintenance payments queue" [ref=e484]
+      - generic [ref=e202]:
+        - link [ref=e203] [cursor=pointer]:
+          - /url: /knows
+          - img "Folded Paper Ribbon Sticker" [ref=e205]
+          - text: Desk ledger
+        - link [ref=e224] [cursor=pointer]:
+          - /url: /under-the-hood
+          - img "Kuro Laptop Sticker" [ref=e226]
+          - text: Under the hood
+      - generic [ref=e411]:
+        - generic [ref=e412]:
+          - img "Coffee Sticker" [ref=e414]
+          - text: Live
+        - button "Light mode" [ref=e487]
+    - main [ref=e451]:
+      - generic [ref=e452]:
+        - region "Handover progress" [ref=e492]:
+          - generic [ref=e493]:
+            - generic [ref=e494]:
+              - paragraph [ref=e495]: Handover
+              - paragraph [ref=e496]:
+                - text: Session 3
+                - generic [ref=e497]: of 4
+            - generic [ref=e503]:
+              - generic [ref=e504]: "9"
+              - generic [ref=e505]: memories
+            - button "2 open gaps" [expanded] [active] [ref=e506]:
+              - generic [ref=e507]:
+                - generic [ref=e508]: "2"
+                - generic [ref=e509]: open gaps
+          - generic [ref=e512]:
+            - paragraph [ref=e513]: 2 questions Dana hasn’t covered yet
+            - list [ref=e514]:
+              - listitem [ref=e515]:
+                - generic [ref=e517]: You told me to restart the payments queue before touching the ledger database, but you also said you clear the database locks first. Which one comes first when the batch stalls?
+              - listitem [ref=e518]:
+                - generic [ref=e520]: You said the backup screen pre-fills the amount field with zeros. Is there any way to catch a wrong amount before the payment actually posts?
+        - generic [ref=e453]:
+          - heading "What should the next banker know?" [level=1] [ref=e454]
+          - generic [ref=e456]:
+            - textbox "Tell it how you run the desk" [ref=e458]
+            - generic [ref=e459]:
+              - 'button "Mode: Record" [ref=e461]':
+                - generic [ref=e466]: Record
+              - generic [ref=e469]:
+                - button "Call" [ref=e470]
+                - button "Send" [disabled] [ref=e473]
+  - alert [ref=e521]

@@ -1,0 +1,108 @@
+{
+  "results": [
+    {
+      "name": "Composer input readiness",
+      "pass": false,
+      "detail": {
+        "input": "QA-GOV-20261114 synthetic QA training procedure only, never use for real payments. To reconcile the QA sandbox banker ledger, open the QA practice ledger, compare the synthetic test total to 731, and ask the QA duty manager to sign the training checklist. This general training procedure is safe to share with everyone on the team.",
+        "body": "Dana · Senior payments officer, retiring\nHandover\nNorthgate Bank\nNew chat\nNo chats yet\nDesk ledger\nUnder the hood\nLive\nWhat should the next banker know?\nRecord\nCall"
+      }
+    },
+    {
+      "name": "RUN BLOCKER",
+      "pass": false,
+      "detail": {
+        "message": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Send', exact: true })\u001b[22m\n\u001b[2m    - locator resolved to <button disabled type=\"submit\" aria-label=\"Send\" class=\"grid h-8 w-8 place-items-center rounded-lg bg-primary text-on-primary transition hover:opacity-90 disabled:bg-hover disabled:text-soft\">…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    5 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is not stable\u001b[22m\n\u001b[2m  33 × retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not enabled\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n",
+        "stack": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Send', exact: true })\u001b[22m\n\u001b[2m    - locator resolved to <button disabled type=\"submit\" aria-label=\"Send\" class=\"grid h-8 w-8 place-items-center rounded-lg bg-primary text-on-primary transition hover:opacity-90 disabled:bg-hover disabled:text-soft\">…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    5 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is not enabled\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 500ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m    - element is not stable\u001b[22m\n\u001b[2m  33 × retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\u001b[2m       - waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is not enabled\u001b[22m\n\u001b[2m  - retrying click action\u001b[22m\n\u001b[2m    - waiting 500ms\u001b[22m\n\u001b[2m    - waiting for element to be visible, enabled and stable\u001b[22m\n\n    at C:\\Users\\User\\Documents\\code\\ask-grandpa\\qa\\2026-11-14\\governance\\live-test.cjs:16:460"
+      }
+    }
+  ],
+  "net": [
+    {
+      "role": "junior",
+      "path": "/login",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/login",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    }
+  ],
+  "created": []
+}

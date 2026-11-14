@@ -1,0 +1,43 @@
+- generic [ref=f1e1]:
+  - 'button "Viewing as: Dana · Senior payments officer, retiring" [ref=f1e4]':
+    - generic [ref=f1e5]: Dana · Senior payments officer, retiring
+  - generic [ref=f1e10]:
+    - button "Open menu" [ref=f1e11]
+    - complementary [ref=f1e14]:
+      - generic [ref=f1e15]:
+        - link "Handover Northgate Bank" [ref=f1e16] [cursor=pointer]:
+          - /url: /
+          - generic [ref=f1e21]:
+            - text: Handover
+            - generic [ref=f1e22]: Northgate Bank
+        - button "Close menu" [ref=f1e23]
+      - button "New chat" [ref=f1e27]
+      - navigation [ref=f1e30]:
+        - generic [ref=f1e31]:
+          - img "Pip Thinking Sticker" [ref=f1e33]
+          - text: No chats yet
+      - generic [ref=f1e208]:
+        - link [ref=f1e209] [cursor=pointer]:
+          - /url: /knows
+          - img "Folded Paper Ribbon Sticker" [ref=f1e211]
+          - text: Desk ledger
+        - link [ref=f1e230] [cursor=pointer]:
+          - /url: /under-the-hood
+          - img "Kuro Laptop Sticker" [ref=f1e232]
+          - text: Under the hood
+      - generic [ref=f1e417]:
+        - generic [ref=f1e418]:
+          - img "Coffee Sticker" [ref=f1e420]
+          - text: Live
+        - button "Dark mode" [ref=f1e454]
+    - main [ref=f1e457]:
+      - generic [ref=f1e460]:
+        - heading "What should the next banker know?" [level=1] [ref=f1e461]
+        - generic [ref=f1e463]:
+          - textbox "Tell it how you run the desk" [active] [ref=f1e465]
+          - generic [ref=f1e466]:
+            - 'button "Mode: Record" [ref=f1e468]':
+              - generic [ref=f1e473]: Record
+            - generic [ref=f1e476]:
+              - button "Call" [ref=f1e477]
+              - button "Send" [disabled] [ref=f1e480]

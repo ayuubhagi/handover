@@ -1,0 +1,3 @@
+const {chromium}=require(process.env.TEMP+'/ask-grandpa-qa-tools/node_modules/playwright');
+const fs=require('fs'); const out=__dirname;
+(async()=>{const browser=await chromium.launch({channel:'chrome',headless:true});const ctx=await browser.newContext({viewport:{width:390,height:844}});const p=await ctx.newPage(); await p.goto('http://localhost:3000');await p.waitForTimeout(2500);console.log(await p.locator('body').innerText()); await p.screenshot({path:out+'/mobile-home.png'});console.log(await p.getByRole('button').evaluateAll(es=>es.map(e=>({name:e.getAttribute('aria-label')||e.innerText,rect:JSON.stringify(e.getBoundingClientRect())})))); await browser.close();})();

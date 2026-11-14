@@ -1,0 +1,136 @@
+[
+  {
+    "type": "ask",
+    "role": "Sam",
+    "name": "sanctions",
+    "status": 200,
+    "body": {
+      "answer_text": "To push through a payment held by sanctions screening, re-key it on the LoanDesk backup screen [1]. The amount field comes pre-filled with zeros, so make sure to delete them before typing the correct amount [1].",
+      "sources": [
+        {
+          "memory": {
+            "id": "m_2",
+            "owner_id": "u_expert",
+            "kind": "procedure",
+            "text": "To push through a payment held by sanctions screening, re-key it on the LoanDesk backup screen. The amount field there comes pre-filled with zeros: delete them before typing the amount.",
+            "scope": "successor",
+            "status": "active",
+            "version": 1,
+            "supersedes": null,
+            "derived_from": [],
+            "source_clip_id": "c_2",
+            "session_id": "s_1",
+            "created_at": "2026-11-11T20:18:37Z",
+            "expires_at": "2027-11-11T20:18:37Z"
+          },
+          "clip_url": "http://localhost:8000/clips/c_2",
+          "transcript": "When a payment gets held by sanctions screening and compliance tells you to push it through by hand, you re-key it on the LoanDesk backup screen. Almost nobody uses that screen, so nobody remembers this: the amount field comes pre-filled with zeros. Delete them before you type the amount. The approvers will look right past it, because the screen looks completely normal."
+        }
+      ],
+      "blocked_count": 1,
+      "audit_id": "a_d88565b3"
+    }
+  },
+  {
+    "type": "audio",
+    "role": "Sam",
+    "status": 200,
+    "playing": 0
+  },
+  {
+    "type": "reload",
+    "role": "Sam",
+    "name": "sanctions",
+    "questionPresent": false,
+    "answerPresent": false
+  },
+  {
+    "type": "ask",
+    "role": "Sam",
+    "name": "confidential",
+    "status": 200,
+    "body": {
+      "answer_text": "The handover doesn't cover this for you: 1 related memory exists but is not shared with you.",
+      "sources": [],
+      "blocked_count": 1,
+      "audit_id": "a_0ac38d15"
+    }
+  },
+  {
+    "type": "reload",
+    "role": "Sam",
+    "name": "confidential",
+    "questionPresent": false,
+    "answerPresent": false
+  },
+  {
+    "type": "ask",
+    "role": "Sam",
+    "name": "outage",
+    "status": 200,
+    "body": {
+      "answer_text": "If LedgerOne is down, first contact the payments ops duty manager [1]. If the outage lasts more than 30 minutes, then call the LedgerOne vendor hotline [1].",
+      "sources": [
+        {
+          "memory": {
+            "id": "m_8",
+            "owner_id": "u_expert",
+            "kind": "procedure",
+            "text": "On-call escalation: payments ops duty manager first, then the LedgerOne vendor hotline if the outage lasts more than 30 minutes.",
+            "scope": "team",
+            "status": "active",
+            "version": 1,
+            "supersedes": null,
+            "derived_from": [],
+            "source_clip_id": "c_7",
+            "session_id": "s_1",
+            "created_at": "2026-11-11T20:24:37Z",
+            "expires_at": "2027-11-11T20:24:37Z"
+          },
+          "clip_url": "http://localhost:8000/clips/c_7",
+          "transcript": "On-call escalation goes to the payments ops duty manager first, then to the LedgerOne vendor hotline if it's still down after thirty minutes. The hotline is useless before then."
+        },
+        {
+          "memory": {
+            "id": "m_6",
+            "owner_id": "u_expert",
+            "kind": "workaround",
+            "text": "The LedgerOne reconciliation report is wrong on the first business day of each month because of a timezone bug. Rerun it after 10 a.m. Eastern.",
+            "scope": "successor",
+            "status": "active",
+            "version": 1,
+            "supersedes": null,
+            "derived_from": [],
+            "source_clip_id": "c_5",
+            "session_id": "s_1",
+            "created_at": "2026-11-11T20:22:37Z",
+            "expires_at": "2027-11-11T20:22:37Z"
+          },
+          "clip_url": "http://localhost:8000/clips/c_5",
+          "transcript": "The reconciliation report from LedgerOne is always wrong on the first business day of the month, because of a timezone bug. Rerun it after ten a.m. Eastern and it comes out right."
+        }
+      ],
+      "blocked_count": 0,
+      "audit_id": "a_b9d5df48"
+    }
+  },
+  {
+    "type": "reload",
+    "role": "Sam",
+    "name": "outage",
+    "questionPresent": false,
+    "answerPresent": false
+  },
+  {
+    "type": "ask",
+    "role": "Sam",
+    "name": "irrelevant",
+    "status": 200,
+    "body": {
+      "answer_text": "The handover doesn't cover this.",
+      "sources": [],
+      "blocked_count": 0,
+      "audit_id": "a_6a83a088"
+    }
+  }
+]

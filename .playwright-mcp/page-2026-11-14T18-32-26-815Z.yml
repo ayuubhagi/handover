@@ -1,0 +1,37 @@
+- generic [ref=f161e1]:
+  - 'button "Viewing as: Handing over" [ref=f161e4]':
+    - generic [ref=f161e5]: Handing over
+  - generic [ref=f161e10]:
+    - complementary [ref=f161e11]:
+      - link "Handover" [ref=f161e13] [cursor=pointer]:
+        - /url: /
+      - button "New chat" [ref=f161e17]
+      - navigation [ref=f161e20]:
+        - generic [ref=f161e21]:
+          - img "Pip Thinking Sticker" [ref=f161e23]
+          - text: No chats yet
+      - generic [ref=f161e198]:
+        - link [ref=f161e199] [cursor=pointer]:
+          - /url: /knows
+          - img "Folded Paper Ribbon Sticker" [ref=f161e201]
+          - text: Handed over
+        - link [ref=f161e220] [cursor=pointer]:
+          - /url: /under-the-hood
+          - img "Kuro Laptop Sticker" [ref=f161e222]
+          - text: Under the hood
+      - generic [ref=f161e407]:
+        - generic [ref=f161e408]:
+          - img "Coffee Sticker" [ref=f161e410]
+          - text: Live
+        - button "Dark mode" [ref=f161e444]
+    - main [ref=f161e447]:
+      - generic [ref=f161e449]:
+        - heading "What do you know?" [level=1] [ref=f161e450]
+        - generic [ref=f161e452]:
+          - textbox "Tell it what you know" [active] [ref=f161e454]
+          - generic [ref=f161e455]:
+            - 'button "Mode: Record" [ref=f161e457]':
+              - generic [ref=f161e462]: Record
+            - generic [ref=f161e465]:
+              - button "Call" [ref=f161e466]
+              - button "Send" [disabled] [ref=f161e469]

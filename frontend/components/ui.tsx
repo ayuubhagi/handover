@@ -109,6 +109,7 @@ export const audienceLabel = (s: MemoryScope) => AUDIENCE.find((a) => a.value ==
 /** Plays an API audio URL; falls back to reading the text aloud when there is no recording. */
 export function PlayButton({ url, text, label, autoPlay = false }: { url: string | null; text?: string; label: string; autoPlay?: boolean }) {
   const [playing, setPlaying] = useState(false);
+  const [loading, setLoading] = useState(false);
   const audio = useRef<HTMLAudioElement | null>(null);
   const src = api.mediaUrl(url);
   const canSpeak = !src && !!text && typeof window !== "undefined" && "speechSynthesis" in window;
@@ -117,6 +118,7 @@ export function PlayButton({ url, text, label, autoPlay = false }: { url: string
     audio.current?.pause();
     if (canSpeak) window.speechSynthesis.cancel();
     setPlaying(false);
+    setLoading(false);
   }
 
   function play() {
@@ -124,14 +126,32 @@ export function PlayButton({ url, text, label, autoPlay = false }: { url: string
       const a = audio.current ?? new window.Audio(src);
       audio.current = a;
       a.onended = () => setPlaying(false);
+      // Loading until audio actually starts (the clip is fetched on first play).
+      a.onwaiting = () => setLoading(true);
+      a.onplaying = () => {
+        setLoading(false);
+        setPlaying(true);
+      };
       a.currentTime = 0;
-      a.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+      setLoading(true);
+      a.play().catch(() => {
+        setLoading(false);
+        setPlaying(false);
+      });
     } else if (canSpeak && text) {
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
+      u.onstart = () => {
+        setLoading(false);
+        setPlaying(true);
+      };
       u.onend = () => setPlaying(false);
+      u.onerror = () => {
+        setLoading(false);
+        setPlaying(false);
+      };
+      setLoading(true);
       window.speechSynthesis.speak(u);
-      setPlaying(true);
     }
   }
 
@@ -147,11 +167,19 @@ export function PlayButton({ url, text, label, autoPlay = false }: { url: string
   if (!src && !canSpeak) return null;
   return (
     <button
-      onClick={playing ? stop : play}
+      onClick={playing || loading ? stop : play}
+      aria-busy={loading}
+      aria-label={loading ? "Loading audio, click to cancel" : undefined}
       className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-ink transition hover:bg-hover"
     >
-      {playing ? <IconPause className="h-3.5 w-3.5" /> : <IconPlay className="h-3.5 w-3.5" />}
-      {playing ? "Stop" : label}
+      {loading ? (
+        <span className="h-3.5 w-3.5 animate-spin rounded-full border-[1.75px] border-current border-t-transparent opacity-70" aria-hidden="true" />
+      ) : playing ? (
+        <IconPause className="h-3.5 w-3.5" />
+      ) : (
+        <IconPlay className="h-3.5 w-3.5" />
+      )}
+      {loading ? "Loading" : playing ? "Stop" : label}
     </button>
   );
 }

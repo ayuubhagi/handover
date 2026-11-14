@@ -1,0 +1,1160 @@
+{
+  "results": [
+    {
+      "name": "Scope team enforces isolated-role visibility",
+      "pass": true,
+      "detail": {
+        "senior": true,
+        "junior": true,
+        "intern": true
+      }
+    },
+    {
+      "name": "Scope successor enforces isolated-role visibility",
+      "pass": true,
+      "detail": {
+        "senior": true,
+        "junior": true,
+        "intern": false
+      }
+    },
+    {
+      "name": "Scope never_transfer enforces isolated-role visibility",
+      "pass": true,
+      "detail": {
+        "senior": true,
+        "junior": false,
+        "intern": false
+      }
+    },
+    {
+      "name": "Scope team enforces isolated-role visibility",
+      "pass": true,
+      "detail": {
+        "senior": true,
+        "junior": true,
+        "intern": true
+      }
+    },
+    {
+      "name": "Interview procedure generates inherited runbook step",
+      "pass": true,
+      "detail": {
+        "step": {
+          "id": "r_d2d2823a",
+          "text": "To reconcile the QA sandbox banker ledger, open the QA practice ledger, compare the synthetic test total to 731, and ask the QA duty manager to sign the training checklist.",
+          "derived_from": [
+            "m_1e9b5802"
+          ],
+          "status": "active"
+        }
+      }
+    },
+    {
+      "name": "Empty correction cannot save",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "Correct creates v2 and supersedes v1",
+      "pass": true,
+      "detail": {
+        "old": {
+          "id": "m_1e9b5802",
+          "owner_id": "u_expert",
+          "kind": "procedure",
+          "text": "To reconcile the QA sandbox banker ledger, open the QA practice ledger, compare the synthetic test total to 731, and ask the QA duty manager to sign the training checklist.",
+          "scope": "team",
+          "status": "corrected",
+          "version": 1,
+          "supersedes": null,
+          "derived_from": [],
+          "source_clip_id": "c_8ba8505c",
+          "session_id": "s_7f0ff08d",
+          "created_at": "2026-11-14T20:38:54Z",
+          "expires_at": "2027-11-14T20:38:54Z"
+        },
+        "new": {
+          "id": "m_7ba36284",
+          "owner_id": "u_expert",
+          "kind": "procedure",
+          "text": "QA-GOV-20261114 CORRECTED synthetic QA training procedure: reconcile only the QA sandbox ledger total 947 and ask the QA duty manager to sign the training checklist. Never use for real payments.",
+          "scope": "team",
+          "status": "active",
+          "version": 2,
+          "supersedes": "m_1e9b5802",
+          "derived_from": [],
+          "source_clip_id": "c_8ba8505c",
+          "session_id": "s_7f0ff08d",
+          "created_at": "2026-11-14T20:42:34Z",
+          "expires_at": "2027-11-14T20:38:54Z"
+        }
+      }
+    },
+    {
+      "name": "Correction flags dependent runbook for review",
+      "pass": true,
+      "detail": {
+        "steps": [
+          {
+            "id": "r_d2d2823a",
+            "text": "To reconcile the QA sandbox banker ledger, open the QA practice ledger, compare the synthetic test total to 731, and ask the QA duty manager to sign the training checklist.",
+            "derived_from": [
+              "m_7ba36284"
+            ],
+            "status": "needs_review"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Junior receives correction live without refresh",
+      "pass": false,
+      "detail": {
+        "texts": []
+      }
+    },
+    {
+      "name": "Nonowner cannot govern QA memory",
+      "pass": true,
+      "detail": {
+        "status": 403
+      }
+    },
+    {
+      "name": "Forget cancellation retains memory",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "Forget cascades through both versions and runbook",
+      "pass": true,
+      "detail": {
+        "forgotten_ids": [
+          "m_7ba36284",
+          "m_1e9b5802"
+        ],
+        "runbook_steps_removed": [
+          "r_d2d2823a"
+        ],
+        "audit_id": "a_a643935e"
+      }
+    },
+    {
+      "name": "Junior live memory/runbook removed without refresh",
+      "pass": false,
+      "detail": {}
+    },
+    {
+      "name": "Cleanup m_67e31663",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "name": "Original gaps unchanged",
+      "pass": true,
+      "detail": {
+        "before": [
+          {
+            "id": "g_1",
+            "question": "You told me to restart the payments queue before touching the ledger database, but you also said you clear the database locks first. Which one comes first when the batch stalls?",
+            "kind": "contradiction",
+            "from_memory_ids": [
+              "m_1",
+              "m_7"
+            ],
+            "status": "asked"
+          },
+          {
+            "id": "g_2",
+            "question": "You said the backup screen pre-fills the amount field with zeros. Is there any way to catch a wrong amount before the payment actually posts?",
+            "kind": "missing",
+            "from_memory_ids": [
+              "m_2"
+            ],
+            "status": "open"
+          }
+        ],
+        "after": [
+          {
+            "id": "g_1",
+            "question": "You told me to restart the payments queue before touching the ledger database, but you also said you clear the database locks first. Which one comes first when the batch stalls?",
+            "kind": "contradiction",
+            "from_memory_ids": [
+              "m_1",
+              "m_7"
+            ],
+            "status": "asked"
+          },
+          {
+            "id": "g_2",
+            "question": "You said the backup screen pre-fills the amount field with zeros. Is there any way to catch a wrong amount before the payment actually posts?",
+            "kind": "missing",
+            "from_memory_ids": [
+              "m_2"
+            ],
+            "status": "open"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Cleanup confirms no active QA memories",
+      "pass": true,
+      "detail": {
+        "tombstones": [
+          "m_1e9b5802",
+          "m_67e31663",
+          "m_7ba36284"
+        ]
+      }
+    }
+  ],
+  "net": [
+    {
+      "role": "senior",
+      "path": "/login",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/login",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/login",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/login",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories/m_1e9b5802/scope",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories/m_1e9b5802/scope",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories/m_1e9b5802/scope",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories/m_1e9b5802/scope",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories/m_1e9b5802/correct",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/login",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/login",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories/m_7ba36284/forget",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/gaps",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/memories",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "junior",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/audit",
+      "status": 200
+    },
+    {
+      "role": "intern",
+      "path": "/runbook",
+      "status": 200
+    },
+    {
+      "role": "senior",
+      "path": "/audit",
+      "status": 200
+    }
+  ],
+  "created": [
+    "m_1e9b5802",
+    "m_67e31663",
+    "m_7ba36284"
+  ]
+}

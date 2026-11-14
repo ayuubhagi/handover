@@ -1,0 +1,17 @@
+{
+  "muted": {
+    "text": "Ask call\n\n0:01\n\nMuted\n\nHi, what do you need to know about the desk?\n\n“yeah”\n\nSend now",
+    "tracks": [
+      {
+        "enabled": true,
+        "state": "live"
+      }
+    ]
+  },
+  "ended": [
+    {
+      "enabled": true,
+      "state": "ended"
+    }
+  ]
+}

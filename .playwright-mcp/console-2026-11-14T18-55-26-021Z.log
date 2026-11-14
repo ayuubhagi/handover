@@ -1,0 +1,2 @@
+[   12571ms] [ERROR] Access to fetch at 'http://localhost:8000/sessions/s_9852713f/answer' from origin 'http://localhost:3001' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ http://localhost:3001/:1
+[   12571ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://localhost:8000/sessions/s_9852713f/answer:1

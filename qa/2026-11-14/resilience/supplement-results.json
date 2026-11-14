@@ -1,0 +1,18 @@
+{
+  "focus": {
+    "text": "HandoverNorthgate Bank",
+    "rect": {
+      "x": -240,
+      "y": 16,
+      "width": 109.890625,
+      "height": 32.5,
+      "top": 16,
+      "right": -130.109375,
+      "bottom": 48.5,
+      "left": -240
+    }
+  },
+  "callBefore": "Recording call\n\n0:05\n\nAsking\n\nYou told me to restart the payments queue before touching the ledger database, but you also said you clear the database locks first. Which one comes first when the batch stalls?\n\nSend now",
+  "callAfter": "Recording call\n\n0:06\n\nSomething went wrong\n\nYou told me to restart the payments queue before touching the ledger database, but you also said you clear the database locks first. Which one comes first when the batch stalls?\n\nMicrophone unavailable: Permission denied\n\nSend now",
+  "ended": true
+}

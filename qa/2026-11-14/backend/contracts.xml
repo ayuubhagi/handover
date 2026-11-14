@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="9" time="33.509" timestamp="2026-11-14T15:27:55.468722-05:00" hostname="gamerz"><testcase classname="backend.tests.test_contract" name="test_identity_is_token_not_header" time="2.271"><failure message="AssertionError: assert {'id': 'u_exp...le': 'expert'} == {'id': 'u_exp...le': 'senior'}&#10;  &#10;  Omitting 2 identical items, use -vv to show&#10;  Differing items:&#10;  {'role': 'expert'} != {'role': 'senior'}&#10;  &#10;  Full diff: (-: missing in left side, +: extra in left side)&#10;    {...&#10;  &#10;  ...Full output truncated, use '-vv' to show">backend\tests\test_contract.py:76: in test_identity_is_token_not_header
+    assert api.get("/me", headers=SENIOR).json() == {"id": "u_expert", "name": "Dana", "role": "senior"}
+E   AssertionError: assert {'id': 'u_exp...le': 'expert'} == {'id': 'u_exp...le': 'senior'}
+E     
+E     Omitting 2 identical items, use -vv to show
+E     Differing items:
+E     {'role': 'expert'} != {'role': 'senior'}
+E     
+E     Full diff: (-: missing in left side, +: extra in left side)
+E       {...
+E     
+E     ...Full output truncated, use '-vv' to show</failure></testcase><testcase classname="backend.tests.test_contract" name="test_login_requires_passcode" time="3.194"><failure message="AssertionError: assert ({'expires_at'...oken', 'user'} == {'expires_at'...oken', 'user'}&#10;  &#10;  Full diff: (-: missing in left side, +: extra in left side)&#10;    {&#10;        'expires_at',&#10;        'token',&#10;        'user',&#10;    } and 'successor' == 'junior'&#10;  &#10;  - junior&#10;  + successor)">backend\tests\test_contract.py:86: in test_login_requires_passcode
+    assert set(body) == {"token", "expires_at", "user"} and body["user"]["role"] == "junior" and body["user"]["name"] == "Sam"
+E   AssertionError: assert ({'expires_at'...oken', 'user'} == {'expires_at'...oken', 'user'}
+E     
+E     Full diff: (-: missing in left side, +: extra in left side)
+E       {
+E           'expires_at',
+E           'token',
+E           'user',
+E       } and 'successor' == 'junior'
+E     
+E     - junior
+E     + successor)</failure></testcase><testcase classname="backend.tests.test_contract" name="test_errors_are_json_with_cors" time="0.052" /><testcase classname="backend.tests.test_contract" name="test_memories_scoped_per_viewer" time="1.417"><failure message="AssertionError: []&#10;assert (set() == {'m_5', 'm_6', 'm_8'}&#10;  &#10;  Extra items in the right set:&#10;  'm_6'&#10;  'm_8'&#10;  'm_5'&#10;  &#10;  Full diff: (-: missing in left side, +: extra in left side)...&#10;  &#10;  ...Full output truncated, use '-vv' to show)">backend\tests\test_contract.py:105: in test_memories_scoped_per_viewer
+    assert {m["id"] for m in intern} == {"m_5", "m_6", "m_8"} and all(m["scope"] == "team" for m in intern), intern
+E   AssertionError: []
+E   assert (set() == {'m_5', 'm_6', 'm_8'}
+E     
+E     Extra items in the right set:
+E     'm_6'
+E     'm_8'
+E     'm_5'
+E     
+E     Full diff: (-: missing in left side, +: extra in left side)...
+E     
+E     ...Full output truncated, use '-vv' to show)</failure></testcase><testcase classname="backend.tests.test_contract" name="test_runbook_visibility" time="0.901"><failure message="AssertionError: set()&#10;assert set() == {'r_3', 'r_4', 'r_5'}&#10;  &#10;  Extra items in the right set:&#10;  'r_4'&#10;  'r_5'&#10;  'r_3'&#10;  &#10;  Full diff: (-: missing in left side, +: extra in left side)...&#10;  &#10;  ...Full output truncated, use '-vv' to show">backend\tests\test_contract.py:165: in test_runbook_visibility
+    assert intern == {"r_3", "r_4", "r_5"}, intern  # only steps built from team memories (m_5, m_6, m_8)
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: set()
+E   assert set() == {'r_3', 'r_4', 'r_5'}
+E     
+E     Extra items in the right set:
+E     'r_4'
+E     'r_5'
+E     'r_3'
+E     
+E     Full diff: (-: missing in left side, +: extra in left side)...
+E     
+E     ...Full output truncated, use '-vv' to show</failure></testcase><testcase classname="backend.tests.test_contract" name="test_gaps" time="0.284" /><testcase classname="backend.tests.test_contract" name="test_governance_is_owner_only" time="1.284" /><testcase classname="backend.tests.test_contract" name="test_clip_access" time="10.827"><failure message="AssertionError: assert 403 == 200&#10; +  where 403 = &lt;Response [403 Forbidden]&gt;.status_code&#10; +    where &lt;Response [403 Forbidden]&gt; = get('/clips/c_7', headers={'Authorization': 'Bearer [REDACTED]'})&#10; +      where get = &lt;httpx.Client object at 0x0000014DAAAD7250&gt;.get">backend\tests\test_contract.py:239: in test_clip_access
+    assert api.get("/clips/c_7", headers=INTERN).status_code == 200   # backs team memory m_8
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 403 == 200
+E    +  where 403 = &lt;Response [403 Forbidden]&gt;.status_code
+E    +    where &lt;Response [403 Forbidden]&gt; = get('/clips/c_7', headers={'Authorization': 'Bearer [REDACTED]'})
+E    +      where get = &lt;httpx.Client object at 0x0000014DAAAD7250&gt;.get</failure></testcase><testcase classname="backend.tests.test_contract" name="test_live_websocket_requires_token" time="2.266" /></testsuite></testsuites>

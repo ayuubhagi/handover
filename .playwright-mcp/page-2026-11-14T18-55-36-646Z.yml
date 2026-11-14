@@ -1,0 +1,40 @@
+- generic [active] [ref=f2e1]:
+  - 'button "Viewing as: Handing over" [ref=f2e4]':
+    - generic [ref=f2e5]: Handing over
+  - generic [ref=f2e10]:
+    - complementary [ref=f2e11]:
+      - link "Handover" [ref=f2e13] [cursor=pointer]:
+        - /url: /
+      - button "New chat" [ref=f2e19]
+      - navigation [ref=f2e22]:
+        - generic [ref=f2e476]:
+          - paragraph [ref=f2e477]: Today
+          - list [ref=f2e478]:
+            - listitem [ref=f2e479]:
+              - button "When the sanctions hold screen is down,…" [ref=f2e480]
+      - generic [ref=f2e200]:
+        - link [ref=f2e201] [cursor=pointer]:
+          - /url: /knows
+          - img "Folded Paper Ribbon Sticker" [ref=f2e203]
+          - text: Handed over
+        - link [ref=f2e222] [cursor=pointer]:
+          - /url: /under-the-hood
+          - img "Kuro Laptop Sticker" [ref=f2e224]
+          - text: Under the hood
+      - generic [ref=f2e409]:
+        - generic [ref=f2e410]:
+          - img "Coffee Sticker" [ref=f2e412]
+          - text: Live
+        - button "Light mode" [ref=f2e446]
+    - main [ref=f2e450]:
+      - generic [ref=f2e452]:
+        - heading "What do you know?" [level=1] [ref=f2e453]
+        - generic [ref=f2e455]:
+          - textbox "Tell it what you know" [disabled] [ref=f2e457]
+          - generic [ref=f2e458]:
+            - 'button "Mode: Record" [ref=f2e460]':
+              - generic [ref=f2e465]: Record
+            - generic [ref=f2e468]:
+              - button "Call" [disabled] [ref=f2e469]
+              - button "Send" [disabled] [ref=f2e472]
+  - alert [ref=f2e475]

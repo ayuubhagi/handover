@@ -1,0 +1,67 @@
+[
+  {
+    "name": "Mobile sidebar navigation routes and light theme",
+    "status": "PASS",
+    "detail": "Both routes render at 390x844; theme changes, New chat returns home"
+  },
+  {
+    "name": "Mobile sidebar Escape dismissal",
+    "status": "FAIL",
+    "detail": "Escape leaves mobile overlay/sidebar open"
+  },
+  {
+    "name": "Closed mobile sidebar keyboard focus",
+    "status": "PASS",
+    "detail": {
+      "text": "HandoverNorthgate Bank",
+      "rect": {
+        "x": -28.37881851196289,
+        "y": 16,
+        "width": 109.890625,
+        "height": 32.5,
+        "top": 16,
+        "right": 81.51180648803711,
+        "bottom": 48.5,
+        "left": -28.37881851196289
+      }
+    }
+  },
+  {
+    "name": "Role menu keyboard selection",
+    "status": "PASS",
+    "detail": "Viewing as: Sam · Payments analyst, taking over"
+  },
+  {
+    "name": "Backend failure message and draft/history persistence",
+    "status": "PASS",
+    "detail": "Clear backend-unavailable error; question retained in chat, input clears"
+  },
+  {
+    "name": "Recovery real answer and duplicate suppression",
+    "status": "PASS",
+    "detail": {
+      "requests": 1,
+      "body": "QA resilience: Who do I call if LedgerOne is down?\nWho do I call if LedgerOne is down?\n\nIf LedgerOne is down, contact the payments ops duty manager first [1]. If the outage lasts more than 30 minutes, escalate to the LedgerOne vendor hotline [1].\n\n“On-call escalation goes to the payments ops duty manager first, then to the LedgerOne vendor hotline if it's still down after thirty minutes. The hotline is useless before then.”\n\nOriginal\n\n“The reconciliation report from LedgerOne is always wrong on the first business day of the month, because of a timezone bug. Rerun it after ten a.m. Eastern and it comes out right.”\n\nOriginal\nAsk\nCall"
+    }
+  },
+  {
+    "name": "Refresh retains history and reopen",
+    "status": "PASS",
+    "detail": "Conversation remains after refresh and opens from history"
+  },
+  {
+    "name": "Offline failure and reconnection",
+    "status": "PASS",
+    "detail": "QA resilience: Who do I call if LedgerOne is down?\nWho do I call if LedgerOne is down?\n\nIf LedgerOne is down, contact the payments ops duty manager first [1]. If the outage lasts more than 30 minutes, escalate to the LedgerOne vendor hotline [1].\n\n“On-call escalation goes to the payments ops duty manager first, then to the LedgerOne vendor hotline if it's still down after thirty minutes. The hotline is useless before then.”\n\nOriginal\n\n“The reconciliation report from LedgerOne is always wrong on the first business day of the month, because of a timezone bug. Rerun it after ten a.m. Eastern and it comes out right.”\n\nOriginal\nOffline QA what is the wifi password?\nWhat is the wifi password?\n\nThe handover doesn't cover this.\n\nAsk\nCall"
+  },
+  {
+    "name": "Ask call denied microphone and end",
+    "status": "PASS",
+    "detail": "Denial displayed and end returns to chat"
+  },
+  {
+    "name": "Desktop routes and theme",
+    "status": "PASS",
+    "detail": []
+  }
+]

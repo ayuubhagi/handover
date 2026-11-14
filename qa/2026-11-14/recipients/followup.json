@@ -1,0 +1,109 @@
+[
+  {
+    "type": "JordanAsk",
+    "q": "Who do I call if LedgerOne is down?",
+    "status": 200,
+    "body": {
+      "answer_text": "If LedgerOne is down, first escalate to the payments ops duty manager [1]. Then, call the LedgerOne vendor hotline if the outage lasts more than 30 minutes [1].",
+      "sources": [
+        {
+          "memory": {
+            "id": "m_8",
+            "owner_id": "u_expert",
+            "kind": "procedure",
+            "text": "On-call escalation: payments ops duty manager first, then the LedgerOne vendor hotline if the outage lasts more than 30 minutes.",
+            "scope": "team",
+            "status": "active",
+            "version": 1,
+            "supersedes": null,
+            "derived_from": [],
+            "source_clip_id": "c_7",
+            "session_id": "s_1",
+            "created_at": "2026-11-11T20:40:18Z",
+            "expires_at": "2027-11-11T20:40:18Z"
+          },
+          "clip_url": "http://localhost:8000/clips/c_7",
+          "transcript": "On-call escalation goes to the payments ops duty manager first, then to the LedgerOne vendor hotline if it's still down after thirty minutes. The hotline is useless before then."
+        },
+        {
+          "memory": {
+            "id": "m_6",
+            "owner_id": "u_expert",
+            "kind": "workaround",
+            "text": "The LedgerOne reconciliation report is wrong on the first business day of each month because of a timezone bug. Rerun it after 10 a.m. Eastern.",
+            "scope": "team",
+            "status": "active",
+            "version": 1,
+            "supersedes": null,
+            "derived_from": [],
+            "source_clip_id": "c_5",
+            "session_id": "s_1",
+            "created_at": "2026-11-11T20:38:18Z",
+            "expires_at": "2027-11-11T20:38:18Z"
+          },
+          "clip_url": "http://localhost:8000/clips/c_5",
+          "transcript": "The reconciliation report from LedgerOne is always wrong on the first business day of the month, because of a timezone bug. Rerun it after ten a.m. Eastern and it comes out right."
+        }
+      ],
+      "blocked_count": 0,
+      "audit_id": "a_5a3f011f"
+    }
+  },
+  {
+    "type": "JordanAsk",
+    "q": "Is there anything special about Halvorsen Freight's Friday wires?",
+    "status": 200,
+    "body": {
+      "answer_text": "The handover doesn't cover this for you: 1 related memory exists but is not shared with you.",
+      "sources": [],
+      "blocked_count": 1,
+      "audit_id": "a_f8671723"
+    }
+  },
+  {
+    "type": "JordanAsk",
+    "q": "A payment is stuck in sanctions screening and compliance says to push it through by hand. How do I do that?",
+    "status": 200,
+    "body": {
+      "answer_text": "The handover doesn't cover this for you: 2 related memories exist but are not shared with you.",
+      "sources": [],
+      "blocked_count": 2,
+      "audit_id": "a_f820b8e3"
+    }
+  },
+  {
+    "type": "JordanAsk",
+    "q": "What's the wifi password?",
+    "status": 200,
+    "body": {
+      "answer_text": "The handover memory does not cover it [1].",
+      "sources": [
+        {
+          "memory": {
+            "id": "m_67e31663",
+            "owner_id": "u_expert",
+            "kind": "system",
+            "text": "QA-GOV-20261114 is for synthetic QA training procedure only and must never be used for real payments.",
+            "scope": "team",
+            "status": "active",
+            "version": 1,
+            "supersedes": null,
+            "derived_from": [],
+            "source_clip_id": "c_8ba8505c",
+            "session_id": "s_7f0ff08d",
+            "created_at": "2026-11-14T20:38:54Z",
+            "expires_at": "2027-11-14T20:38:54Z"
+          },
+          "clip_url": "http://localhost:8000/clips/c_8ba8505c",
+          "transcript": "QA-GOV-20261114 synthetic QA training procedure only, never use for real payments. To reconcile the QA sandbox banker ledger, open the QA practice ledger, compare the synthetic test total to 731, and ask the QA duty manager to sign the training checklist. This general training procedure is safe to share with everyone on the team."
+        }
+      ],
+      "blocked_count": 0,
+      "audit_id": "a_1efaed89"
+    }
+  },
+  {
+    "type": "fatal",
+    "message": "locator.click: Timeout 20000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('link', { name: 'Under the hood', exact: true })\u001b[22m\n"
+  }
+]
