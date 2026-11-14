@@ -182,9 +182,9 @@ export function Chat() {
 
   if (empty) {
     return (
-      <div className="relative flex h-full flex-col items-center justify-center px-4">
-        {progress && <div className="absolute inset-x-0 top-16 px-4">{progress}</div>}
-        <div className="relative w-full max-w-2xl">
+      <div className="flex h-full flex-col overflow-y-auto px-4">
+        {progress && <div className="shrink-0 pt-16">{progress}</div>}
+        <div className="mx-auto my-auto w-full max-w-2xl py-8">
           <h1 className="text-balance text-center font-serif text-4xl tracking-tight sm:text-5xl">
             {mode === "interview" ? "What should the next banker know?" : "What do you need to know?"}
           </h1>
