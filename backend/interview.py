@@ -60,7 +60,8 @@ def recall(state: State) -> dict:
     if not state.get("memory_on"):
         return {"open_gaps": [], "recent": []}
     expert = state["expert_id"]
-    gaps = list(db.col(db.GAPS).find({"owner_id": expert, "status": "open"}))
+    # "asked" but never answered (a dropped call or abandoned session) is still a gap: ask it again.
+    gaps = list(db.col(db.GAPS).find({"owner_id": expert, "status": {"$in": ["open", "asked"]}}))
     gaps.sort(key=lambda g: (g["kind"] != "contradiction", g.get("created_at") or 0))
     recent = list(db.col(db.MEMORIES).find({"owner_id": expert, "status": "active"}).sort("created_at", -1).limit(8))
     open_gaps = [
