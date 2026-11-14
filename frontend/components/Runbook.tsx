@@ -58,7 +58,7 @@ export function Runbook({ simple = false }: { simple?: boolean }) {
         </span>
       }
     >
-      <p className="mb-4 text-xs text-muted">Built from Dana’s memories. Steps disappear here when the memory behind them is forgotten.</p>
+      <p className="mb-4 text-xs text-muted">{simple ? "Built from what Dana shared. A step goes away when the thing behind it is forgotten." : "Built from Dana’s memories. Steps disappear here when the memory behind them is forgotten."}</p>
       {error && <ErrorNote message={error} onRetry={() => load(false)} />}
       {!steps && !error && <Loading label="Loading runbook" />}
       {steps?.length === 0 && <p className="text-sm text-muted">No steps visible to you.</p>}
