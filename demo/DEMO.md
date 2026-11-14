@@ -18,15 +18,15 @@ allowed to inherit, in her own voice. Each thing Dana knows is based on a real i
 
 | Time | Screen (Driver) | Speaker says |
 |---|---|---|
-| **0:00 to 0:25 Hook** | Title slide or app home | "In 2016, Ottawa eliminated about twelve hundred experienced pay advisor jobs and moved pay to a new system called Phoenix. The Auditor General called what followed an incomprehensible failure. Part of the reason: the people who knew how pay actually worked were gone. Every company has people like that. Handover makes sure what they know doesn't leave with them." |
+| **0:00 to 0:25 Hook** | Title slide or app home | "Right now, about ten thousand of Canada's most experienced public servants have applied to retire, and the ones approved have to leave by January. Banks are in the same spot with the people who run their oldest systems. Most of what these people know isn't written down anywhere. Handover makes sure it doesn't leave with them." |
 | **0:25 to 0:55 Interview** | As Dana: open Interview. The interviewer voice asks the contradiction question (gap g_1). Answer with the live mic, or the fallback file `demo/audio/dana_answer_g1.mp3`. The new memory appears. | "Dana has done one interview so far. Handover didn't just record her. It noticed she told us two different things about a stalled batch, and it went back to ask. Her answer becomes one clear rule, linked to both originals." |
-| **0:55 to 1:40 Successor + proof** | Switch to Sam. Ask: "I'm sending the interest-only payment on a syndicated loan tonight. Anything I need to watch for?" First show memory off (Compare), then memory on. Dana's clip plays. | "In 2020, Citibank meant to send about eight million dollars in interest and sent almost nine hundred million, because its loan system needed extra fields set and three approvers didn't know. With memory off, the AI gives generic steps. With memory on, Sam hears Dana warn him, in her own voice." |
+| **0:55 to 1:40 Successor + proof** | Switch to Sam. Ask: "A payment is stuck in sanctions screening and compliance says to push it through by hand. How do I do that?" First show memory off (Compare), then memory on. Dana's clip plays. | "Last year it came out that Citigroup meant to credit a client two hundred and eighty dollars and credited eighty-one trillion. Staff had re-keyed it on a backup screen nobody uses, and that screen pre-fills the amount with zeros. Two reviewers missed it. With memory off, the AI says: re-enter it and get it approved. With memory on, Sam hears Dana warn him about the zeros, in her own voice." |
 | **1:40 to 2:05 What shouldn't transfer** | As Sam, ask about Halvorsen Freight's Friday wires: "1 memory withheld". Show the audit log entry. Switch to Riley: nothing. | "Some knowledge shouldn't be inherited. Dana has an off-the-books deal that skips a second approver. That goes to compliance, not to the next person on shift. Sam sees that something is withheld, Riley from marketing sees nothing, and every read is audited. This is enforced inside the Atlas Vector Search query, not the prompt." |
-| **2:05 to 2:25 Knowledge expires** | Split: Dana's memory list and Sam's runbook. Dana clicks Forget on the routing flag R7 memory. The runbook step disappears on Sam's side, live. | "In 2012, Knight Capital lost four hundred and forty million dollars in forty-five minutes when a reused flag woke up dead code on one server. Dana's warning about flag R7 matters until that server is switched off. Then it should go. It expires on its own, or Dana forgets it, and everything built from it updates live." |
+| **2:05 to 2:25 Knowledge expires** | Split: Dana's memory list and Sam's runbook. Dana clicks Forget on the routing flag R7 memory. The runbook step disappears on Sam's side, live. | "Knowledge also has a shelf life. Dana's warning about flag R7 only matters until the old PAY-08 server is switched off. Then it should go. It expires on its own, or Dana forgets it, and everything built from it updates live." |
 | **2:25 to 2:50 Under the hood** | Under the hood page, or the LangSmith trace | "Under the hood, it's all MongoDB Atlas: Vector Search with permission pre-filters, hybrid search with rank fusion, a graph lookup that finds everything built from a memory and removes it in one transaction, change streams for live updates, a TTL index for expiry, and the interview's own state checkpointed in Atlas. LangSmith shows which memory drove each answer." |
 | **2:50 to 3:00 Close** | Title | "AI can read the code. It can't read the person. Handover captures what experts know, and the expert decides who inherits it. Built today on MongoDB Atlas." |
 
-**If we're running long,** cut in this order: the Riley switch, then the Knight sentence, then half of
+**If we're running long,** cut in this order: the Riley switch, then the shelf-life sentence, then half of
 "under the hood."
 
 **Before each judge group:** hit reseed, and open the app, LangSmith and Atlas Data Explorer in tabs.
@@ -44,7 +44,7 @@ built today.
 |---|---|---|
 | 0:00 to 0:06 | Interviewer voice asks the contradiction question | (none) |
 | 0:06 to 0:15 | Dana's answer, the rule updates | "When experts leave, what they know leaves too. Handover interviews them, and catches where their answers don't add up." |
-| 0:15 to 0:28 | Sam asks about the interest-only payment: memory off vs on, Dana's clip plays | "Memory changes what the successor gets. Here, the warning that would have saved Citibank nine hundred million dollars." |
+| 0:15 to 0:28 | Sam asks how to push through a held payment: memory off vs on, Dana's clip plays | "Memory changes what the successor gets. Here, the warning that would have stopped Citigroup's eighty-one trillion dollar near miss." |
 | 0:28 to 0:38 | Halvorsen: "1 memory withheld", the audit row turns red | "Some knowledge shouldn't transfer. Permissions are enforced inside Atlas Vector Search, and every read is audited." |
 | 0:38 to 0:48 | Dana forgets R7, Sam's runbook updates live | "Forget cascades through change streams. Expired knowledge disappears on its own." |
 | 0:48 to 1:00 | Quick scroll of the repo code, the Atlas collections, the LangSmith trace, the title card | "Built today on MongoDB Atlas, ElevenLabs, Gemini and LangGraph. Handover." |
@@ -59,8 +59,9 @@ built today.
 ## Questions judges will grill us on
 
 **"Why not just have AI read the code and docs?"**
-The Citi field quirk, the Knight flag and the Halvorsen deal weren't in any code or doc. They were in people's
-heads. AI agents need that context too. Handover is how they get it, with rules about who can use it.
+The backup-screen zeros, the R7 flag and the Halvorsen deal weren't in any code or doc. They were in people's
+heads. Klarna and Commonwealth Bank both cut staff for AI in the last two years and then reversed it. AI agents
+need this context. Handover is how they get it, with rules about who can use it.
 
 **"How do you know nothing leaks?"**
 The permission filter runs inside the `$vectorSearch` stage itself, so memories you can't see are never even
