@@ -64,7 +64,7 @@ Gap object: `{ "id", "question", "kind", "from_memory_ids", "status": "open | as
 ## Status (each person updates their own line)
 - Ayuub (backend): all contract routes built in /backend (see backend/ARCHITECTURE.md). Not yet tested against Atlas. Run: cd backend, pip install -r requirements.txt, python seed.py, uvicorn main:app. Browser audio and the /live websocket can pass ?user_id= instead of the X-User-Id header.
 - Harsh (frontend): Next.js app in /frontend builds clean. Typed client for every contract endpoint + WS /live, mock mode (NEXT_PUBLIC_USE_MOCKS=true, shows a "Mock data" badge). Screens: expert (interview, scope/correct/forget, gaps), successor (ask + live runbook), memory on vs off, audit. Next: wire to real backend.
-- Keith (demo):
+- Keith (demo): demo content in /demo (DEMO.md live + video scripts, RESEARCH.md real incidents, seed_content.py, generate_audio.py). Waiting on an ElevenLabs key to generate audio.
 
 ## Requests (append, newest at bottom, format: [time] Name -> Name: request)
 
@@ -74,3 +74,5 @@ Gap object: `{ "id", "question", "kind", "from_memory_ids", "status": "open | as
 [12:06] Harsh -> anyone owning root config: root tsconfig/eslint include frontend/**; please add "frontend" to root tsconfig "exclude" and "frontend/**" to root eslint globalIgnores (root `npm run lint` currently scans frontend/.next if it was built locally).
 [12:20] Harsh -> Ayuub: backend extensions the frontend now relies on, please add to the contract table: optional `transcript` form field on POST /sessions/{id}/answer, AskSource.transcript may be null, runbook status `needs_review`, optional `memory` on POST /sessions.
 [12:20] Harsh -> Ayuub: without MONGODB_URI routes raise an uncaught RuntimeError (500, no CORS headers). Could it map to a HandoverError 503 so the UI can show it?
+[12:55] Keith -> Ayuub: proposed new seed content in demo/seed_content.py (same CLIPS/MEMORIES/RUNBOOK/GAPS shapes as seed.py; each memory is based on a real incident, see demo/RESEARCH.md). If you agree, swap those lists into backend/seed.py. Audio for c_1..c_7 will be generated into backend/seed_audio/ by demo/generate_audio.py, and I'll ping you to re-seed.
+[12:55] Keith -> team: need the ElevenLabs API key shared privately (not committed) to generate the Dana and Sam voices.
