@@ -326,22 +326,34 @@ def _answer_without_memory(question: str) -> str:
         return _NO_MEMORY_FALLBACK
 
 
-def _grounded_answer(question: str, docs: list[dict], owner_name: str) -> str:
+def _open_gaps_for_docs(owner_id: str, docs: list[dict]) -> list[dict]:
+    """Open gaps are safe to surface only when every referenced memory is already in this answer."""
+    visible_ids = {d["_id"] for d in docs}
+    if not visible_ids:
+        return []
+    gaps = db.col(db.GAPS).find({"owner_id": owner_id, "status": {"$in": ["open", "asked"]}})
+    return [g for g in gaps if g.get("from_memory_ids") and set(g["from_memory_ids"]) <= visible_ids]
+
+
+def _grounded_answer(question: str, docs: list[dict], owner_name: str, gaps: list[dict]) -> str:
     quote = f'{owner_name}\'s handover notes say: "{docs[0]["text"]}"'
     if not llm.llm_available():
-        return quote
-    context = "\n".join(f"[{i}] ({d['kind']}) {d['text']}" for i, d in enumerate(docs, 1))
-    try:
-        answer = llm.generate_text(
-            f"Handover memories:\n{context}\n\nQuestion: {question}",
-            system=f"You help a successor take over {owner_name}'s work. Answer using ONLY the numbered handover "
-                   "memories provided. If they do not answer the question, say the handover memory does not cover it. "
-                   "Be concise and practical, 2-4 sentences, and cite memories like [1].",
-        )
-        return answer or quote
-    except Exception as exc:
-        log.warning("llm failed, quoting top source: %s", exc)
-        return quote
+        answer = quote
+    else:
+        context = "\n".join(f"[{i}] ({d['kind']}) {d['text']}" for i, d in enumerate(docs, 1))
+        try:
+            answer = llm.generate_text(
+                f"Handover memories:\n{context}\n\nQuestion: {question}",
+                system=f"You help a successor take over {owner_name}'s work. Answer using ONLY the numbered handover "
+                       "memories provided. If they do not answer the question, say the handover memory does not cover it. "
+                       "Be concise and practical, 2-4 sentences, and cite memories like [1].",
+            ) or quote
+        except Exception as exc:
+            log.warning("llm failed, quoting top source: %s", exc)
+            answer = quote
+    if gaps:
+        answer += "\n\n" + "\n".join(f"Open question: {gap['question']}" for gap in gaps)
+    return answer
 
 
 def _nothing_available(blocked: int) -> str:
@@ -473,7 +485,8 @@ def ask(viewer: dict, question: str, memory_on: bool = True) -> dict:
 
     if docs:
         owner = access.get_person(owner_id) or {}
-        answer = _grounded_answer(question, docs, owner.get("name", "The expert"))
+        gaps = _open_gaps_for_docs(owner_id, docs)
+        answer = _grounded_answer(question, docs, owner.get("name", "The expert"), gaps)
     else:
         answer = _nothing_available(blocked)
 
