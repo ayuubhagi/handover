@@ -1,0 +1,38 @@
+"""Settings loaded from the repo root .env (or the process environment)."""
+import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+_ROOT = Path(__file__).resolve().parent.parent
+load_dotenv(_ROOT / ".env")
+load_dotenv(Path(__file__).resolve().parent / ".env")
+
+
+def _get(name: str, default: str = "") -> str:
+    return (os.getenv(name) or default).strip()
+
+
+class Settings:
+    MONGODB_URI = _get("MONGODB_URI")
+    MONGODB_DB = _get("MONGODB_DB", "handover")
+
+    VOYAGE_API_KEY = _get("VOYAGE_API_KEY")
+    VOYAGE_BASE_URL = _get("VOYAGE_BASE_URL", "https://api.voyageai.com/v1")
+    VOYAGE_MODEL = _get("VOYAGE_MODEL", "voyage-3.5")
+    EMBED_DIMS = int(_get("EMBED_DIMS", "1024"))
+
+    GOOGLE_API_KEY = _get("GOOGLE_API_KEY")
+    GEMINI_MODEL = _get("GEMINI_MODEL", "gemini-flash-latest")
+
+    ELEVENLABS_API_KEY = _get("ELEVENLABS_API_KEY")
+    ELEVENLABS_VOICE_ID = _get("ELEVENLABS_VOICE_ID", "JBFqnCBsd6RMkjVDRZzb")
+    ELEVENLABS_TTS_MODEL = _get("ELEVENLABS_TTS_MODEL", "eleven_flash_v2_5")
+    ELEVENLABS_STT_MODEL = _get("ELEVENLABS_STT_MODEL", "scribe_v1")
+
+    PUBLIC_BASE_URL = _get("PUBLIC_BASE_URL", "http://localhost:8000").rstrip("/")
+    MEMORY_TTL_DAYS = int(_get("MEMORY_TTL_DAYS", "365"))
+    CORS_ORIGINS = [o.strip() for o in _get("CORS_ORIGINS", "*").split(",") if o.strip()]
+
+
+settings = Settings()
