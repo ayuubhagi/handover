@@ -64,12 +64,14 @@ Memory object:
 | PATCH | /memories/{id}/scope | `{ "scope": "team" }` | `Memory` |
 | POST | /memories/{id}/correct | `{ "text": "..." }` | `{ "old": Memory, "new": Memory }` |
 | POST | /memories/{id}/forget | | `{ "forgotten_ids": [], "runbook_steps_removed": [], "audit_id" }` |
-| POST | /ask | `{ "question": "...", "memory": true }` | `{ "answer_text", "sources": [{ "memory": Memory, "clip_url", "transcript" (may be null) }], "blocked_count": 0, "audit_id" }` |
+| POST | /ask | `{ "question": "...", "memory": true }` | `{ "answer_text", "sources": [{ "memory": Memory, "clip_url", "transcript" (may be null) }], "blocked_count": 0, "audit_id", "viewer": { "id", "name" }, "allowed_scopes": [], "used_memory_ids": [], "withheld_scopes": [] (one scope per withheld memory, never text), "trace_url" (LangSmith run, null when tracing is off), "query" (null when memory is off) }` |
 | GET | /runbook | | `[{ "id", "text", "derived_from": [], "status": "active | needs_review" }]` (needs_review after a source is corrected) |
 | GET | /audit?limit=20 | | `[{ "actor_id", "action", "memory_ids", "allowed", "reason", "ts" }]` |
 | GET | /gaps?owner_id=u_expert | | `[{ "id", "question", "kind": "missing | contradiction", "from_memory_ids": [], "status" }]` |
 | WS | /live | | pushes `{ "type": "memory_changed", "memory": Memory }` and `{ "type": "runbook_changed" }` (from change streams) |
 | GET | /clips/{clip_id}?token= | | audio file (`X-Content-Type-Options: nosniff`) |
+
+`query` object (what actually ran in Atlas, for the "Why this answer" card): `{ "collection", "mode": "rank_fusion | manual_rrf | vector | keyword", "prefilter" (the $vectorSearch filter: owner, status, expiry, scope $in allowed_scopes), "pipeline" (the stages; the query vector is shown as a placeholder), "note", "relevance_check": { "mode", "pipeline", "cutoff", "rule" } }`. Dates are ISO strings.
 
 Gap object: `{ "id", "question", "kind", "from_memory_ids", "status": "open | asked | answered" }`
 
@@ -161,3 +163,4 @@ Then run `uvicorn main:app --port 8000` from `backend/` (with the venv from `pip
   Withheld memories show only their level, never any text. Keep it compact, the judges need to read it from a projector.
 
 [15:40] Harsh -> Keith and Ayuub: your 15:05 and 15:14 frontend tasks are done (not committed yet). Role menu: "Dana · Senior, retiring", "Sam · Junior, taking over", "Jordan · Intern"; "Other team" and Riley are gone. Scope badges and the scope pickers use the 🔒/🟠/🟢 labels with Keith's tooltips. Withheld answers now say "1 memory is restricted for your role, so it was withheld. This was logged." Bug 1 (Call stuck on Connecting) was already fixed in my CallScreen change. Bug 2: a Junior or Intern in Record mode now gets an "Ask instead" button. Mock mode now uses demo/seed_content.py (Halvorsen, PAY-08, sanctions backup screen) with the same access rules as backend/access.py.
+[15:50] Ayuub -> Harsh: Keith's "Why this answer" card is live on /ask (contract table updated): `viewer {id, name}`, `allowed_scopes`, `used_memory_ids`, `withheld_scopes` (levels only, never text), `trace_url` (LangSmith link, null when tracing is off) and `query` (the exact $vectorSearch pre-filter and pipeline that ran, with the vector shown as a placeholder; null for memory off). Example for Sam's Halvorsen question: allowed [successor, team], used [], withheld [never_transfer], prefilter scope $in [successor, team]. Show `query.prefilter` in a collapsible code block.
