@@ -1,12 +1,16 @@
 """ElevenLabs speech to text for the expert, and the synthesized interviewer voice.
 
 Only the interviewer is ever synthesized. The expert's voice is always their real recording.
+Both calls reuse earlier results for identical input, so rehearsals don't spend ElevenLabs credits twice.
 """
+import hashlib
 import logging
 
 import httpx
 
+import cache
 import clips
+import db
 from config import settings
 from errors import BadRequest
 from models import clip_url
@@ -22,6 +26,10 @@ def _headers() -> dict:
 def transcribe(audio: bytes, filename: str = "answer.webm", content_type: str = "audio/webm") -> str:
     if not settings.ELEVENLABS_API_KEY:
         raise BadRequest("ELEVENLABS_API_KEY is not set; send a 'transcript' form field instead")
+    digest = hashlib.sha256(audio).hexdigest()
+    hit = cache.get("stt", digest, settings.ELEVENLABS_STT_MODEL)
+    if hit is not None:
+        return hit
     try:
         resp = httpx.post(
             f"{API}/speech-to-text",
@@ -33,7 +41,9 @@ def transcribe(audio: bytes, filename: str = "answer.webm", content_type: str = 
         resp.raise_for_status()
     except httpx.HTTPError as exc:
         raise BadRequest(f"Speech to text failed: {exc}") from exc
-    return (resp.json().get("text") or "").strip()
+    text = (resp.json().get("text") or "").strip()
+    cache.put("stt", text, digest, settings.ELEVENLABS_STT_MODEL)
+    return text
 
 
 def synthesize(text: str) -> bytes | None:
@@ -55,7 +65,13 @@ def synthesize(text: str) -> bytes | None:
 
 
 def speak(text: str, session_id: str) -> str | None:
-    """Synthesize the interviewer's question, store it as a clip, return its URL."""
+    """The interviewer's question as audio: reuse a stored recording of the same text, else synthesize and store it."""
+    if settings.RESPONSE_CACHE:
+        existing = db.col(db.CLIPS).find_one(
+            {"speaker": "interviewer", "transcript": text, "audio_file_id": {"$ne": None}}, {"_id": 1})
+        if existing:
+            log.info("cache hit: interviewer voice")
+            return clip_url(existing["_id"])
     audio = synthesize(text)
     if not audio:
         return None

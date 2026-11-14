@@ -146,6 +146,9 @@ INDEXES = {
         IndexModel([("actor_id", ASCENDING), ("ts", DESCENDING)], name="actor_ts"),
     ],
     "clips": [IndexModel([("session_id", ASCENDING)], name="session")],
+    # Response cache (cache.py): entries expire CACHE_TTL_HOURS after they were stored.
+    "response_cache": [IndexModel([("created_at", ASCENDING)], name="created_at_ttl",
+                                  expireAfterSeconds=settings.CACHE_TTL_HOURS * 3600)],
 }
 
 VECTOR_INDEX = "memories_vector"
