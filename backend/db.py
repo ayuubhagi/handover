@@ -77,10 +77,18 @@ def run_in_transaction(fn: Callable[[ClientSession], T]) -> T:
 def _ensure_collection(name: str, validator: dict) -> None:
     database = get_db()
     schema = {"$jsonSchema": validator}
-    if name not in database.list_collection_names():
+    info = next(database.list_collections(filter={"name": name}), None)
+    if info is None:
         database.create_collection(name, validator=schema, validationLevel="strict", validationAction="error")
-    else:
+        return
+    if info.get("options", {}).get("validator") == schema:
+        return
+    try:
         database.command("collMod", name, validator=schema, validationLevel="strict", validationAction="error")
+    except OperationFailure as exc:
+        # collMod needs dbAdmin; a readWrite user keeps the validator set when the collection was created.
+        log.warning("could not update validator on %s (%s); drop the collection or use a dbAdmin user",
+                    name, exc.details.get("codeName") if exc.details else exc)
 
 
 def _ensure_search_index(name: str, definition: dict, index_type: str) -> None:
@@ -121,7 +129,8 @@ def ensure_schema(wait_for_search: bool = False) -> None:
         # Lets the change stream hand us the document that a TTL delete just removed.
         get_db().command("collMod", MEMORIES, changeStreamPreAndPostImages={"enabled": True})
     except OperationFailure as exc:
-        log.warning("pre-images not enabled on memories: %s", exc)
+        log.warning("change stream pre-images not enabled on memories (%s); TTL deletes arrive without the old doc",
+                    exc.details.get("codeName") if exc.details else exc)
     try:
         _ensure_search_index(VECTOR_INDEX, schemas.VECTOR_INDEX_DEFINITION, "vectorSearch")
         _ensure_search_index(TEXT_INDEX, schemas.TEXT_INDEX_DEFINITION, "search")

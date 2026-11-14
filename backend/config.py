@@ -36,3 +36,8 @@ class Settings:
 
 
 settings = Settings()
+
+# Tracing without a key only produces 401 noise; switch it off until LANGSMITH_API_KEY is set.
+if not (_get("LANGSMITH_API_KEY") or _get("LANGCHAIN_API_KEY")):
+    os.environ["LANGSMITH_TRACING"] = "false"
+    os.environ["LANGCHAIN_TRACING_V2"] = "false"
