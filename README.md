@@ -59,12 +59,6 @@ Required:
 - Python 3.11 to 3.13 and Node 20+. On macOS/Linux or Git Bash, activate with `source .venv/bin/activate` or `source .venv/Scripts/activate`.
 - Check the backend: `http://localhost:8000/health` → `{"ok": true, "mongo": true}`. Every other route needs a token from `POST /login` (`{"user_id", "passcode"}` from DEMO_PASSCODES), sent as `Authorization: Bearer <token>`.
 
-## Git workflow (we are 3+ people pushing at once)
-
-- **Pull before you start and after every commit:** `git pull --rebase origin main`, then push.
-- Fix any conflicts right away, then make sure the app still runs before moving on.
-- Keep commits small and push often so nobody drifts far from `main`.
-
 ## Team
 
 Ayuub Hagi, Harsh (GreenKeewi), Keith V Singh (KVS-ALT)
