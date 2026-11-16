@@ -1,6 +1,6 @@
 # Handover frontend
 
-Next.js (App Router) + Tailwind v4. Talks to the FastAPI backend through the API contract in `../TEAM.md`.
+Next.js (App Router) + Tailwind v4. Talks to the FastAPI backend through the API contract in `../docs/hackathon/TEAM.md`.
 
 ## Run
 
