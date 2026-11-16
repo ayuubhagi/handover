@@ -4,9 +4,9 @@
 
 Built in six hours at **Agents in Context Toronto**, a MongoDB hackathon organized by Cerebral Valley (November 14, 2026), for the **Memory You Can Govern** problem statement.
 
-![Handover: when senior employees leave, their knowledge shouldn't](docs/media/handover.png)
+[![Handover demo video: when senior employees leave, their knowledge shouldn't](docs/media/handover.png)](docs/media/handover_demo.mp4)
 
-**Demo video:** [watch on LinkedIn](#) <!-- replace # with the post link -->
+**[Watch the 70-second demo](docs/media/handover_demo.mp4)** (click the image or this link).
 
 ---
 
