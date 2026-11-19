@@ -26,8 +26,20 @@ class Settings:
     # Optional extra keys (comma separated); llm.py rotates to the next key when one runs out of quota.
     GOOGLE_API_KEYS = list(dict.fromkeys(
         k.strip() for k in [_get("GOOGLE_API_KEY"), *_get("GOOGLE_API_KEYS").split(",")] if k.strip()))
+    # LLM providers, tried in this order (llm.py benches one that runs out of quota and moves on).
+    LLM_PROVIDERS = [p.strip().lower() for p in _get("LLM_PROVIDERS", "groq,gemini").split(",") if p.strip()]
+    LLM_TIMEOUT_S = float(_get("LLM_TIMEOUT_S", _get("GEMINI_TIMEOUT_S", "20")))
+    GROQ_API_KEYS = list(dict.fromkeys(
+        k.strip() for k in [_get("GROQ_API_KEY"), *_get("GROQ_API_KEYS").split(",")] if k.strip()))
+    GROQ_BASE_URL = _get("GROQ_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
+    GROQ_MODEL = _get("GROQ_MODEL", "openai/gpt-oss-120b")
+    GROQ_FALLBACK_MODELS = [m.strip() for m in _get("GROQ_FALLBACK_MODELS", "openai/gpt-oss-20b").split(",")
+                            if m.strip()]
+    # Speech to text: "groq" (Whisper) or "elevenlabs" (Scribe). Falls back to the other when its key is missing.
+    STT_PROVIDER = _get("STT_PROVIDER", "groq").lower()
+    GROQ_STT_MODEL = _get("GROQ_STT_MODEL", "whisper-large-v3-turbo")
+
     GEMINI_MODEL = _get("GEMINI_MODEL", "gemini-3.5-flash")
-    GEMINI_TIMEOUT_S = float(_get("GEMINI_TIMEOUT_S", "20"))
     GEMINI_FALLBACK_MODELS = [m.strip() for m in _get(
         "GEMINI_FALLBACK_MODELS", "gemini-3.8-flash,gemini-3.6-flash,gemini-3.5-flash-lite"
     ).split(",") if m.strip()]

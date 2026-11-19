@@ -1,4 +1,4 @@
-"""ElevenLabs speech to text for the expert, and the synthesized interviewer voice.
+"""Speech to text for the expert (Groq Whisper or ElevenLabs Scribe), and the ElevenLabs interviewer voice.
 
 Only the interviewer is ever synthesized. The expert's voice is always their real recording.
 Both calls reuse earlier results for identical input, so rehearsals don't spend ElevenLabs credits twice.
@@ -23,14 +23,23 @@ def _headers() -> dict:
     return {"xi-api-key": settings.ELEVENLABS_API_KEY}
 
 
-def transcribe(audio: bytes, filename: str = "answer.webm", content_type: str = "audio/webm") -> str:
-    if not settings.ELEVENLABS_API_KEY:
-        raise BadRequest("ELEVENLABS_API_KEY is not set; send a 'transcript' form field instead")
-    digest = hashlib.sha256(audio).hexdigest()
-    hit = cache.get("stt", digest, settings.ELEVENLABS_STT_MODEL)
-    if hit is not None:
-        return hit
-    try:
+def _stt_order() -> list[str]:
+    """Configured provider first, the other as fallback, skipping any without a key."""
+    keys = {"groq": bool(settings.GROQ_API_KEYS), "elevenlabs": bool(settings.ELEVENLABS_API_KEY)}
+    order = [settings.STT_PROVIDER] + [p for p in ("groq", "elevenlabs") if p != settings.STT_PROVIDER]
+    return [p for p in order if keys.get(p)]
+
+
+def _stt_request(provider: str, audio: bytes, filename: str, content_type: str) -> str:
+    if provider == "groq":
+        resp = httpx.post(
+            f"{settings.GROQ_BASE_URL}/audio/transcriptions",
+            headers={"Authorization": f"Bearer {settings.GROQ_API_KEYS[0]}"},
+            data={"model": settings.GROQ_STT_MODEL, "response_format": "json", "language": "en"},
+            files={"file": (filename, audio, content_type)},
+            timeout=120,
+        )
+    else:
         resp = httpx.post(
             f"{API}/speech-to-text",
             headers=_headers(),
@@ -38,12 +47,29 @@ def transcribe(audio: bytes, filename: str = "answer.webm", content_type: str = 
             files={"file": (filename, audio, content_type)},
             timeout=120,
         )
-        resp.raise_for_status()
-    except httpx.HTTPError as exc:
-        raise BadRequest(f"Speech to text failed: {exc}") from exc
-    text = (resp.json().get("text") or "").strip()
-    cache.put("stt", text, digest, settings.ELEVENLABS_STT_MODEL)
-    return text
+    resp.raise_for_status()
+    return (resp.json().get("text") or "").strip()
+
+
+def transcribe(audio: bytes, filename: str = "answer.webm", content_type: str = "audio/webm") -> str:
+    """Speech to text with Groq Whisper or ElevenLabs Scribe (STT_PROVIDER), falling back to the other."""
+    providers = _stt_order()
+    if not providers:
+        raise BadRequest("No speech to text key (GROQ_API_KEY or ELEVENLABS_API_KEY); send a 'transcript' form field")
+    digest = hashlib.sha256(audio).hexdigest()
+    hit = cache.get("stt", digest)
+    if hit is not None:
+        return hit
+    last: Exception | None = None
+    for provider in providers:
+        try:
+            text = _stt_request(provider, audio, filename, content_type)
+            cache.put("stt", text, digest)
+            return text
+        except httpx.HTTPError as exc:
+            log.warning("speech to text via %s failed: %s", provider, exc)
+            last = exc
+    raise BadRequest(f"Speech to text failed: {last}")
 
 
 def synthesize(text: str) -> bytes | None:
