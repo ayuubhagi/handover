@@ -26,8 +26,8 @@ def test_forget_cascades_to_derived_memories_steps_and_gaps(client, login, fresh
     assert not {"m_2", "m_9"} & {s["memory"]["id"] for s in answer["sources"]}
     assert not any("sanctions screening, re-key" in p for p in llm_spy.prompts)
 
-    audit = client.get("/audit", headers=senior).json()
-    assert audit[0]["action"] == "forget" and set(audit[0]["memory_ids"]) == {"m_2", "m_9"}
+    forget = next(e for e in client.get("/audit", headers=senior).json() if e["action"] == "forget")
+    assert forget["allowed"] and set(forget["memory_ids"]) == {"m_2", "m_9"}
 
 
 def test_forget_keeps_a_recording_another_memory_still_cites(client, login, fresh):

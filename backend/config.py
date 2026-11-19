@@ -68,6 +68,19 @@ class Settings:
     )
     MAX_AUDIO_BYTES = int(_get("MAX_AUDIO_BYTES", str(25 * 1024 * 1024)))
 
+    # Public demo. DEMO_MODE adds POST /demo/login (pick a role, no passcode, short-lived token) so passcodes never
+    # ship in the browser bundle, and POST /demo/reset (reseed, at most once per DEMO_RESET_MIN_INTERVAL_S).
+    DEMO_MODE = _get("DEMO_MODE", "false").lower() in ("1", "true", "yes")
+    DEMO_TOKEN_TTL_SECONDS = int(_get("DEMO_TOKEN_TTL_SECONDS", str(2 * 3600)))
+    DEMO_RESET_ENABLED = _get("DEMO_RESET_ENABLED", "true").lower() in ("1", "true", "yes")
+    DEMO_RESET_MIN_INTERVAL_S = int(_get("DEMO_RESET_MIN_INTERVAL_S", "60"))
+    # Requests per client IP per minute on routes that cost money or change data (0 = off).
+    RATE_LIMIT_PER_MINUTE = int(_get("RATE_LIMIT_PER_MINUTE", "20"))
+    TRUST_PROXY_HEADERS = _get("TRUST_PROXY_HEADERS", "false").lower() in ("1", "true", "yes")
+    # LLM calls allowed per UTC day across all users (0 = unlimited). Past it, answers fall back to the
+    # extractive path instead of the free tier running dry mid-demo.
+    LLM_DAILY_BUDGET = int(_get("LLM_DAILY_BUDGET", "0"))
+
 
 settings = Settings()
 

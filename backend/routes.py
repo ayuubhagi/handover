@@ -1,5 +1,5 @@
 """Every route in the TEAM.md API contract."""
-from fastapi import APIRouter, Depends, File, Form, Header, Query, Response, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, Request, File, Form, Header, Query, Response, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 
@@ -10,6 +10,7 @@ import clips
 import db
 import governance
 import interview
+import ratelimit
 import retrieval
 import voice
 from config import settings
@@ -40,9 +41,47 @@ class LoginBody(BaseModel):
     passcode: str | None = None
 
 
-@router.post("/login")
+@router.post("/login", dependencies=[Depends(ratelimit.limit("login"))])
 def login(body: LoginBody):
     return auth.login(body.user_id, body.passcode)
+
+
+class DemoLoginBody(BaseModel):
+    user_id: str
+
+
+@router.get("/demo")
+def demo_info():
+    """Lets the frontend tell a public demo backend from a passcode-protected one."""
+    return {"demo_mode": settings.DEMO_MODE, "reset_enabled": settings.DEMO_MODE and settings.DEMO_RESET_ENABLED}
+
+
+@router.post("/demo/login", dependencies=[Depends(ratelimit.limit("login"))])
+def demo_login(body: DemoLoginBody):
+    if not settings.DEMO_MODE:
+        raise NotFound("Not found")
+    return auth.demo_login(body.user_id)
+
+
+_last_reset = {"at": 0.0}
+
+
+@router.post("/demo/reset")
+def demo_reset(request: Request):
+    """Restore the fictional demo data, so a visitor can undo another visitor's forgets. Throttled globally."""
+    import time
+
+    import seed
+
+    if not (settings.DEMO_MODE and settings.DEMO_RESET_ENABLED):
+        raise NotFound("Not found")
+    wait = settings.DEMO_RESET_MIN_INTERVAL_S - (time.monotonic() - _last_reset["at"])
+    if _last_reset["at"] and wait > 0:
+        raise ratelimit.TooManyRequests(f"The demo was just reset; try again in {int(wait) + 1} s")
+    _last_reset["at"] = time.monotonic()
+    result = seed.reset_demo()
+    audit.write_audit("system", "demo_reset", [], True, f"demo data restored for {ratelimit.client_ip(request)}")
+    return {"ok": True, **result}
 
 
 @router.get("/me")
@@ -58,7 +97,7 @@ def _audio_type(upload: UploadFile) -> str:
 
 
 # interview --------------------------------------------------------------------
-@router.post("/sessions")
+@router.post("/sessions", dependencies=[Depends(ratelimit.limit("interview"))])
 def create_session(body: SessionCreate, me: dict = Depends(viewer)):
     if me["_id"] != body.expert_id:
         raise Forbidden("Only the expert can start their own interview")
@@ -70,7 +109,7 @@ def create_session(body: SessionCreate, me: dict = Depends(viewer)):
     }
 
 
-@router.post("/sessions/{session_id}/answer")
+@router.post("/sessions/{session_id}/answer", dependencies=[Depends(ratelimit.limit("interview"))])
 def answer(session_id: str, audio: UploadFile | None = File(default=None),
            transcript: str | None = Form(default=None), me: dict = Depends(viewer)):
     session = db.col(db.SESSIONS).find_one({"_id": session_id})
@@ -114,17 +153,17 @@ def set_scope(memory_id: str, body: ScopeBody, me: dict = Depends(viewer)):
     return governance.set_scope(me, memory_id, body.scope)
 
 
-@router.post("/memories/{memory_id}/correct")
+@router.post("/memories/{memory_id}/correct", dependencies=[Depends(ratelimit.limit("govern"))])
 def correct(memory_id: str, body: CorrectBody, me: dict = Depends(viewer)):
     return governance.correct_memory(me, memory_id, body.text)
 
 
-@router.post("/memories/{memory_id}/forget")
+@router.post("/memories/{memory_id}/forget", dependencies=[Depends(ratelimit.limit("govern"))])
 def forget(memory_id: str, me: dict = Depends(viewer)):
     return governance.forget_memory(me, memory_id)
 
 
-@router.post("/ask")
+@router.post("/ask", dependencies=[Depends(ratelimit.limit("ask"))])
 def ask(body: AskBody, me: dict = Depends(viewer)):
     return retrieval.ask(me, body.question, body.memory)
 

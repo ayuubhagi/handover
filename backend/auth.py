@@ -39,8 +39,8 @@ def _sign(payload: str) -> str:
     return _b64(hmac.new(_secret, payload.encode(), hashlib.sha256).digest())
 
 
-def issue_token(user_id: str) -> tuple[str, int]:
-    exp = int(time.time()) + settings.TOKEN_TTL_SECONDS
+def issue_token(user_id: str, ttl_seconds: int | None = None) -> tuple[str, int]:
+    exp = int(time.time()) + (settings.TOKEN_TTL_SECONDS if ttl_seconds is None else ttl_seconds)
     payload = _b64(json.dumps({"sub": user_id, "exp": exp}, separators=(",", ":")).encode())
     return f"{payload}.{_sign(payload)}", exp
 
@@ -69,6 +69,16 @@ def login(user_id: str, passcode: str | None) -> dict:
             audit.write_audit(user_id, "login", [], False, "wrong passcode")
         raise Unauthorized("Unknown user or wrong passcode")
     token, exp = issue_token(user_id)
+    return {"token": token, "expires_at": exp,
+            "user": {"id": person["_id"], "name": person["name"], "role": person["role"]}}
+
+
+def demo_login(user_id: str) -> dict:
+    """Public demo only (DEMO_MODE): pick a seeded role without a passcode, get a short-lived token."""
+    person = access.get_person(user_id)
+    if person is None:
+        raise Unauthorized("Unknown demo user")
+    token, exp = issue_token(user_id, settings.DEMO_TOKEN_TTL_SECONDS)
     return {"token": token, "expires_at": exp,
             "user": {"id": person["_id"], "name": person["name"], "role": person["role"]}}
 

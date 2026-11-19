@@ -145,14 +145,7 @@ def seed() -> dict:
                         content_type=ctype, speaker="expert", clip_id=clip_id)
 
     vectors = embeddings.embed_documents([m[4] for m in MEMORIES])
-    docs = []
-    for i, ((mid, clip_id, kind, scope, text, days, derived), vec) in enumerate(zip(MEMORIES, vectors)):
-        created = now - timedelta(days=3) + timedelta(minutes=i)
-        docs.append(build_memory_doc(
-            owner_id=EXPERT, kind=kind, text=text, embedding=vec, scope=scope, source_clip_id=clip_id,
-            session_id=SESSION, derived_from=derived, memory_id=mid, created_at=created,
-            expires_at=(now + timedelta(days=days)) if days else None,
-        ))
+    docs = _memory_docs(now, vectors)
     db.col(db.MEMORIES).insert_many(docs)
 
     db.col(db.RUNBOOK).insert_many(
@@ -166,6 +159,82 @@ def seed() -> dict:
     return {"people": len(PEOPLE), "clips": len(CLIPS), "clips_with_audio": with_audio, "memories": len(docs),
             "runbook_steps": len(RUNBOOK), "gaps": len(GAPS), "search_indexes_ready": ready,
             "example_clip_url": clip_url("c_1")}
+
+
+def _memory_docs(now, vectors: list[list[float]]) -> list[dict]:
+    docs = []
+    for i, ((mid, clip_id, kind, scope, text, days, derived), vec) in enumerate(zip(MEMORIES, vectors)):
+        docs.append(build_memory_doc(
+            owner_id=EXPERT, kind=kind, text=text, embedding=vec, scope=scope, source_clip_id=clip_id,
+            session_id=SESSION, derived_from=derived, memory_id=mid,
+            created_at=now - timedelta(days=3) + timedelta(minutes=i),
+            expires_at=(now + timedelta(days=days)) if days else None,
+        ))
+    return docs
+
+
+def reset_demo() -> dict:
+    """Put the demo data back in place without dropping anything, for POST /demo/reset on a live deploy.
+
+    seed() drops the collections, which also drops the Atlas Search indexes (minutes to rebuild). This instead
+    upserts every seeded document over its current state and deletes whatever visitors added, so the indexes
+    stay queryable. Order matters for the change stream: runbook steps and gaps are restored before visitor
+    memories are deleted, so an expiry cascade for a deleted id never finds a seeded step pointing at it.
+    """
+    now = utcnow()
+    database = db.get_db()
+    for person in PEOPLE:
+        database[db.PEOPLE].replace_one({"_id": person["_id"]}, person, upsert=True)
+
+    database[db.SESSIONS].delete_many({"_id": {"$ne": SESSION}})
+    database[db.SESSIONS].replace_one({"_id": SESSION}, {
+        "_id": SESSION, "expert_id": EXPERT, "memory_on": True, "status": "closed", "turn": len(CLIPS),
+        "created_at": now - timedelta(days=3)}, upsert=True)
+
+    for clip_id, transcript in CLIPS.items():
+        current = database[db.CLIPS].find_one({"_id": clip_id}) or {}
+        file_id = current.get("audio_file_id")
+        audio, ctype = _audio_for(clip_id)
+        if audio and not file_id:  # a forget redacted it: upload the recording again
+            file_id = db.audio_bucket().upload_from_stream(clip_id, audio,
+                                                           metadata={"content_type": ctype, "clip_id": clip_id})
+        database[db.CLIPS].replace_one({"_id": clip_id}, {
+            "_id": clip_id, "owner_id": EXPERT, "speaker": "expert", "audio_url": clip_url(clip_id),
+            "transcript": transcript, "session_id": SESSION, "audio_file_id": file_id, "content_type": ctype,
+            "created_at": current.get("created_at", now)}, upsert=True)
+    for extra in database[db.CLIPS].find({"_id": {"$nin": list(CLIPS)}}):
+        clips.delete_audio(extra)
+    database[db.CLIPS].delete_many({"_id": {"$nin": list(CLIPS)}})
+
+    # Reuse stored embeddings when the text is unchanged; embed only what a forget or correction wiped.
+    stored = {d["_id"]: d for d in database[db.MEMORIES].find({"_id": {"$in": [m[0] for m in MEMORIES]}},
+                                                               {"text": 1, "embedding": 1})}
+    vectors, missing = [], []
+    for i, m in enumerate(MEMORIES):
+        doc = stored.get(m[0], {})
+        ok = doc.get("text") == m[4] and doc.get("embedding")
+        vectors.append(doc["embedding"] if ok else None)
+        if not ok:
+            missing.append(i)
+    if missing:
+        for i, vec in zip(missing, embeddings.embed_documents([MEMORIES[i][4] for i in missing])):
+            vectors[i] = vec
+    seed_ids = [m[0] for m in MEMORIES]
+    for doc in _memory_docs(now, vectors):
+        database[db.MEMORIES].replace_one({"_id": doc["_id"]}, doc, upsert=True)
+
+    for i, (rid, text, derived) in enumerate(RUNBOOK):
+        step = build_runbook_step(text, derived, order=i + 1, step_id=rid)
+        database[db.RUNBOOK].replace_one({"_id": rid}, step, upsert=True)
+    database[db.RUNBOOK].delete_many({"_id": {"$nin": [r[0] for r in RUNBOOK]}})
+    for gid, kind, q, mids in GAPS:
+        database[db.GAPS].replace_one({"_id": gid}, build_gap(EXPERT, q, kind, mids, session_id=SESSION, gap_id=gid),
+                                      upsert=True)
+    database[db.GAPS].delete_many({"_id": {"$nin": [g[0] for g in GAPS]}})
+
+    removed = database[db.MEMORIES].delete_many({"_id": {"$nin": seed_ids}}).deleted_count
+    database[db.AUDIT].delete_many({})
+    return {"memories": len(seed_ids), "visitor_memories_removed": removed, "embedded": len(missing)}
 
 
 if __name__ == "__main__":

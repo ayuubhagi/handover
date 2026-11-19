@@ -125,8 +125,22 @@ def _provider_chain() -> list[tuple[str, str, str]]:
     return chain
 
 
+_budget = {"day": "", "used": 0}
+
+
+def _budget_left() -> bool:
+    """LLM_DAILY_BUDGET caps provider calls per UTC day (cache hits are free). 0 means no cap."""
+    if settings.LLM_DAILY_BUDGET <= 0:
+        return True
+    today = time.strftime("%Y-%m-%d", time.gmtime())
+    if _budget["day"] != today:
+        _budget.update(day=today, used=0)
+    return _budget["used"] < settings.LLM_DAILY_BUDGET
+
+
 def llm_available() -> bool:
-    return bool(_provider_chain())
+    """False with no key, or once today's budget is spent: callers then take their non-LLM fallback path."""
+    return bool(_provider_chain()) and _budget_left()
 
 
 def _attempts() -> list[tuple[str, str, str]]:
@@ -136,8 +150,11 @@ def _attempts() -> list[tuple[str, str, str]]:
 
 
 def _complete(prompt: str, system: str | None, temperature: float, schema: type[BaseModel] | None) -> str:
-    if not llm_available():
+    if not _provider_chain():
         raise RuntimeError("No LLM key set: add GROQ_API_KEY (or GOOGLE_API_KEY) to .env")
+    if not _budget_left():
+        raise RuntimeError("LLM_DAILY_BUDGET reached for today")
+    _budget["used"] += 1
     last: Exception | None = None
     for attempt in _attempts():
         provider, key, model = attempt
