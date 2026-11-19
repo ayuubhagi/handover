@@ -164,15 +164,20 @@ export function CallScreen(props: Props) {
   });
 
   const starting = useRef<Promise<Conversation | null> | null>(null);
+  // Each mount gets a generation number. React StrictMode mounts effects twice in dev, and the second mount
+  // resets `ended`, so without this both mounts' start-up would carry on and run two call loops at once.
+  const generation = useRef(0);
   useEffect(() => {
+    const mine = ++generation.current;
     ended.current = false;
+    const stale = () => ended.current || generation.current !== mine;
     (async () => {
       const p = propsRef.current;
       if (p.kind === "ask") return sayRef.current("Hi, what do you need to know about the desk?", null);
       let c = conv.current;
       // Dev mode mounts twice; share one session instead of starting two.
       if (!c?.sessionId || c.mode !== "interview") c = await (starting.current ??= p.start());
-      if (ended.current) return;
+      if (stale()) return;
       if (!c) return setPhase("error");
       conv.current = c;
       const last = [...c.messages].reverse().find((m) => m.role === "interviewer");

@@ -167,7 +167,7 @@ export function Chat() {
         disabled={!!busy}
         onSend={async (t) => {
           const conv = active?.sessionId ? active : await startInterview(t);
-          if (conv) answer(conv, null, t);
+          return conv ? answer(conv, null, t) : null;
         }}
         onCall={() => setCalling(true)}
         autoFocus

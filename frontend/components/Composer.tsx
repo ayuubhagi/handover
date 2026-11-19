@@ -38,7 +38,8 @@ export function Composer({
   mode: Mode;
   /** Omit to hide the mode switch (ask-only viewers). */
   onMode?: (m: Mode) => void;
-  onSend: (text: string) => void;
+  /** Resolve to null or false when sending failed: the text is put back so nothing typed is lost. */
+  onSend: (text: string) => unknown;
   recording?: boolean;
   level?: number;
   onCall?: () => void;
@@ -54,11 +55,12 @@ export function Composer({
     el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
   }, [text]);
 
-  function submit() {
+  async function submit() {
     const t = text.trim();
     if (!t || disabled) return;
-    onSend(t);
     setText("");
+    const result = await onSend(t);
+    if (result === null || result === false) setText((current) => current || t);
   }
 
   return (
