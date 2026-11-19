@@ -14,7 +14,7 @@ import { ErrorNote, PlayButton, withheldText } from "./ui";
 import type { Mode } from "./store";
 import type { AskResponse } from "../lib/types";
 
-/** Ask Gemini (server route) for a short title; keeps the fallback if it fails. */
+/** Ask the title route (Groq, then Gemini) for a short title; keeps the fallback if it fails. */
 async function nameConversation(id: string, text: string) {
   try {
     const r = await fetch("/api/title", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
