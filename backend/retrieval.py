@@ -87,11 +87,17 @@ def _text_stage(question: str, filters: list[dict]) -> dict:
     }}
 
 
-def _tail(k: int, ids_only: bool) -> list[dict]:
-    """Common end of every pipeline: cut to k, drop the vector, join the source clip."""
+def _tail(k: int, ids_only: bool, recheck: dict) -> list[dict]:
+    """Common end of every pipeline: re-check access on the stored document, cut to k, drop the vector, join the clip.
+
+    The search stages filter on the search index, which mongot updates asynchronously. For a moment after a forget,
+    re-scope or correction the index can still say "active" or the old scope while the database already says
+    otherwise. Matching the same filter again here, against the authoritative stored document, closes that window.
+    """
     if ids_only:
-        return [{"$limit": k}, {"$project": {"_id": 1, "scope": 1, "_score": 1}}]
+        return [{"$match": recheck}, {"$limit": k}, {"$project": {"_id": 1, "scope": 1, "_score": 1}}]
     return [
+        {"$match": recheck},
         {"$limit": k},
         {"$project": {"embedding": 0}},
         {"$lookup": {"from": db.CLIPS, "localField": "source_clip_id", "foreignField": "_id", "as": "clip"}},
@@ -113,13 +119,14 @@ def _rank_fusion_pipeline(question, qv, owner_id, scopes, now, k, ids_only):
             "scoreDetails": not ids_only,
         }},
         *([] if ids_only else [{"$addFields": {"_score": {"$meta": "scoreDetails"}}}]),
-        *_tail(k, ids_only),
+        *_tail(k, ids_only, _mql_filter(owner_id, scopes, now)),
     ]
 
 
 def _ranked(weight: float, ids_only: bool) -> list[dict]:
     """Turn one ranked result list into {doc fields..., _rrf: weight / (60 + rank)}."""
-    keep = {"_id": 1, "scope": 1} if ids_only else {"embedding": 0}
+    keep = ({"_id": 1, "scope": 1, "owner_id": 1, "status": 1, "expires_at": 1} if ids_only
+            else {"embedding": 0})
     return [
         {"$project": keep},
         {"$group": {"_id": None, "docs": {"$push": "$$ROOT"}}},
@@ -147,14 +154,14 @@ def _manual_rrf_pipeline(question, qv, owner_id, scopes, now, k, ids_only):
         {"$replaceRoot": {"newRoot": {"$mergeObjects": ["$doc", {"_score": "$score"}]}}},
         {"$unset": "_rrf"},
     ]
-    return pipeline + _tail(k, ids_only)
+    return pipeline + _tail(k, ids_only, _mql_filter(owner_id, scopes, now))
 
 
 def _vector_pipeline(question, qv, owner_id, scopes, now, k, ids_only):
     return [
         _vector_stage(qv, _mql_filter(owner_id, scopes, now), k),
         {"$addFields": {"_score": {"$meta": "vectorSearchScore"}}},
-        *_tail(k, ids_only),
+        *_tail(k, ids_only, _mql_filter(owner_id, scopes, now)),
     ]
 
 
@@ -173,7 +180,7 @@ def _keyword_pipeline(question, qv, owner_id, scopes, now, k, ids_only):
         {"$addFields": {"_score": {"$divide": [{"$size": {"$setIntersection": [words, variants]}}, len(base) or 1]}}},
         {"$match": {"_score": {"$gt": 0}}},
         {"$sort": {"_score": -1, "created_at": -1}},
-        *_tail(k, ids_only),
+        *_tail(k, ids_only, _mql_filter(owner_id, scopes, now)),
     ]
 
 
