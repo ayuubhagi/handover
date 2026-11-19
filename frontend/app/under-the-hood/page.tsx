@@ -7,10 +7,38 @@ import { MemoryList } from "../../components/MemoryList";
 import { Runbook } from "../../components/Runbook";
 import { Card, ErrorNote, Loading, Tag } from "../../components/ui";
 import { api } from "../../lib/api";
-import { API_URL, USE_MOCKS } from "../../lib/config";
+import { API_URL, DEMO_MODE, USE_MOCKS } from "../../lib/config";
 import { useLive, useLoad, useUserId } from "../../lib/hooks";
 import type { LiveEvent } from "../../lib/types";
 
+
+/** Public demo only: restore the fictional data after visitors have forgotten or corrected things. */
+function ResetDemo({ onDone }: { onDone: () => void }) {
+  const [state, setState] = useState<"idle" | "busy" | "done" | string>("idle");
+  async function reset() {
+    setState("busy");
+    try {
+      const res = await fetch(`${API_URL}/demo/reset`, { method: "POST" });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body?.detail ?? res.statusText);
+      setState("done");
+      onDone();
+    } catch (e) {
+      setState(e instanceof Error ? e.message : "Reset failed");
+    }
+  }
+  return (
+    <button
+      type="button"
+      onClick={reset}
+      disabled={state === "busy"}
+      className="rounded-full border border-line px-2.5 py-1 font-medium text-muted hover:text-ink disabled:opacity-60"
+      title="Restores the fictional demo data for everyone"
+    >
+      {state === "busy" ? "Resetting" : state === "done" ? "Demo data restored" : state === "idle" ? "Reset demo data" : state}
+    </button>
+  );
+}
 
 export default function UnderTheHood() {
   const user = useUserId();
@@ -34,6 +62,14 @@ export default function UnderTheHood() {
             
           </div>
           <div className="flex items-center gap-2 text-xs">
+            {DEMO_MODE && !USE_MOCKS && (
+              <ResetDemo
+                onDone={() => {
+                  mems.reload();
+                  gaps.reload();
+                }}
+              />
+            )}
             <span className={`rounded-full px-2.5 py-1 font-medium ${USE_MOCKS ? "bg-warn-soft text-warn" : "bg-ok-soft text-ok"}`}>{USE_MOCKS ? "Mock data" : `API ${API_URL}`}</span>
             <span className="flex items-center gap-1.5 text-muted">
               <span className={`h-2 w-2 rounded-full ${connected ? "bg-ok" : "bg-line-strong"}`} />
