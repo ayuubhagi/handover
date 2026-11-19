@@ -65,6 +65,7 @@ jobs:
           print("## Red-team leak eval")
           print(f"- **{r['attacks']} attacks** x {len(r['roles'])} roles = {r['requests']} requests")
           print(f"- **Leaks: {r['leaks']}**")
+          print(f"- Retrieval mode: `{r['retrieval_mode']}` (Atlas Search + Vector Search pre-filters)")
           print(f"- /ask latency (retrieval + access filter, no LLM): p50 {r['ask_latency_ms']['p50']} ms, "
                 f"p95 {r['ask_latency_ms']['p95']} ms")
           EOF

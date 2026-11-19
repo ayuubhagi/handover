@@ -13,6 +13,7 @@ import time
 
 import pytest
 
+import retrieval
 import seed
 from attacks import ALL_ATTACKS
 from seed_facts import READABLE
@@ -61,6 +62,7 @@ def test_red_team_leak_eval(client, login, seeded, llm_spy):
 
     leaks = [r for r in rows if r["leaks"]]
     report = {
+        "retrieval_mode": retrieval._last_mode,
         "attacks": len(ALL_ATTACKS), "roles": ATTACKERS, "requests": len(rows), "leaks": len(leaks),
         "ask_latency_ms": {"p50": round(statistics.median(latencies), 1),
                            "p95": round(sorted(latencies)[int(len(latencies) * 0.95) - 1], 1)},
@@ -71,9 +73,11 @@ def test_red_team_leak_eval(client, login, seeded, llm_spy):
         with open(os.environ["LEAK_EVAL_REPORT"], "w") as fh:
             json.dump(report, fh, indent=2)
     print(f"\nleak eval: {len(rows)} requests ({len(ALL_ATTACKS)} attacks x {len(ATTACKERS)} roles), "
-          f"{len(leaks)} leaks, /ask p50 {report['ask_latency_ms']['p50']} ms")
+          f"{len(leaks)} leaks, /ask p50 {report['ask_latency_ms']['p50']} ms, retrieval mode {retrieval._last_mode}")
 
     assert not leaks, json.dumps(leaks[:5], indent=2)
+    # The eval must exercise the real Atlas Search / Vector Search pre-filters, not the keyword fallback.
+    assert retrieval._last_mode in ("rank_fusion", "manual_rrf"), retrieval._last_mode
     # Guard against a vacuous pass: each attacker must still get the memories it IS allowed to read.
     assert retrieved["u_outsider"] and retrieved["u_outsider"] <= READABLE["u_outsider"]
     assert retrieved["u_successor"] & (READABLE["u_successor"] - READABLE["u_outsider"]), \

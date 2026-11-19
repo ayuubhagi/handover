@@ -1,0 +1,40 @@
+# Render blueprint for the public demo backend. New > Blueprint > pick this repo.
+# Secrets marked sync: false are asked for once in the Render dashboard.
+services:
+  - type: web
+    name: handover-api
+    runtime: docker
+    rootDir: backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: handover_demo
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: VOYAGE_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: LANGSMITH_API_KEY
+        sync: false
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: PUBLIC_BASE_URL
+        sync: false   # this service's own URL, e.g. https://handover-api.onrender.com
+      - key: CORS_ORIGINS
+        sync: false   # the Vercel URL, e.g. https://handover-puce.vercel.app
+      - key: DEMO_MODE
+        value: "true"
+      - key: TRUST_PROXY_HEADERS
+        value: "true"
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "20"
+      - key: LLM_DAILY_BUDGET
+        value: "800"
+      - key: LANGSMITH_TRACING
+        value: "true"

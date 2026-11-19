@@ -1,0 +1,9 @@
+.venv
+__pycache__
+.pytest_cache
+tests
+*.log
+*.pyc
+.env
+leak_eval.json
+e2e-screens
